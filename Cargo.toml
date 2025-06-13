@@ -5,9 +5,9 @@ edition = "2021"
 
 [dependencies]
 # Core dependencies
-cim-core-domain = { path = "../cim-core-domain" }
+cim-domain = { path = "../cim-domain" }
 cim-component = { path = "../cim-component" }
-cim-conceptual-core = { path = "../cim-conceptual-core" }
+cim-domain-conceptualspaces = { path = "../cim-domain-conceptualspaces" }
 
 # Standard dependencies
 serde = { version = "1.0", features = ["derive"] }

@@ -1,7 +1,7 @@
 //! Person aggregate implementation
 
 use serde::{Deserialize, Serialize};
-use cim_core_domain::{AggregateRoot, EntityId};
+use cim_domain::{AggregateRoot, EntityId};
 use cim_component::Component;
 use crate::domain::value_objects::{Email, Name, Address, PhoneNumber, TrustLevel};
 use crate::IdentityResult;

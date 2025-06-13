@@ -1,7 +1,7 @@
 //! Concept producer for the Identity context
 
-use cim_conceptual_core::{ConceptProducer, ConceptualPoint, ConceptualSpace, QualityDimension, ConceptualEntity, ConceptMap};
-use cim_conceptual_core::concept_map::ContextId;
+use cim_domain_conceptualspaces::{ConceptProducer, ConceptualPoint, ConceptualSpace, QualityDimension, ConceptualEntity, ConceptMap};
+use cim_domain_conceptualspaces::concept_map::ContextId;
 use crate::{PersonEvent, OrganizationEvent};
 use uuid::Uuid;
 use std::collections::HashMap;
@@ -27,7 +27,7 @@ pub struct IdentityConcept {
     id: Uuid,
     position: ConceptualPoint,
     concept_type: String,
-    qualities: HashMap<cim_conceptual_core::space::DimensionId, f64>,
+            qualities: HashMap<cim_domain_conceptualspaces::space::DimensionId, f64>,
 }
 
 impl ConceptualEntity for IdentityConcept {
@@ -35,7 +35,7 @@ impl ConceptualEntity for IdentityConcept {
         self.position.clone()
     }
 
-    fn qualities(&self) -> HashMap<cim_conceptual_core::space::DimensionId, f64> {
+    fn qualities(&self) -> HashMap<cim_domain_conceptualspaces::space::DimensionId, f64> {
         self.qualities.clone()
     }
 
@@ -48,7 +48,7 @@ impl ConceptualEntity for IdentityConcept {
         }
 
         // Add a root node representing this concept
-        let node = cim_conceptual_core::concept_map::ConceptNode::new(
+        let node = cim_domain_conceptualspaces::concept_map::ConceptNode::new(
             self.concept_type.clone(),
             format!("{} {}", self.concept_type, self.id),
         );
@@ -85,7 +85,7 @@ impl ConceptProducer for IdentityConceptProducer {
         self.context_id
     }
 
-    fn initialize_space(&self) -> cim_conceptual_core::ConceptualResult<()> {
+    fn initialize_space(&self) -> cim_domain_conceptualspaces::ConceptualResult<()> {
         // TODO: Initialize the conceptual space with identity dimensions
         Ok(())
     }

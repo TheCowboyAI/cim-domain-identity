@@ -1,7 +1,7 @@
 //! Organization aggregate implementation
 
 use serde::{Deserialize, Serialize};
-use cim_core_domain::{AggregateRoot, EntityId};
+use cim_domain::{AggregateRoot, EntityId};
 use cim_component::Component;
 use crate::domain::person::PersonId;
 use crate::IdentityResult;

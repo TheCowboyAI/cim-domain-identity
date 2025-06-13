@@ -59,7 +59,7 @@ pub enum IdentityError {
     OrganizationAlreadyExists(String),
 
     #[error("Domain error: {0}")]
-    DomainError(#[from] cim_core_domain::DomainError),
+    DomainError(#[from] cim_domain::DomainError),
 }
 
 pub type IdentityResult<T> = Result<T, IdentityError>;
