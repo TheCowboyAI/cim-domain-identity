@@ -1,6 +1,6 @@
 //! Conceptual dimensions for the Identity context
 
-use cim_domain_conceptualspaces::QualityDimension;
+use cim_domain_conceptualspaces::dimensions::QualityDimension;
 
 /// Identity-specific conceptual dimensions
 pub struct IdentityDimensions;

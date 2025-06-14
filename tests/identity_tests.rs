@@ -15,12 +15,12 @@
 //!     A --> H[Conceptual Integration]
 //! ```
 
-use cim_identity_context::{
+use cim_domain_identity::{
     Person, PersonId, PersonCommand, PersonEvent,
     Organization, OrganizationCommand, OrganizationEvent, OrganizationType,
     IdentityDimensions,
 };
-use cim_identity_context::domain::{Email, Name};
+use cim_domain_identity::domain::{Email, Name};
 
 #[test]
 fn test_person_creation() {

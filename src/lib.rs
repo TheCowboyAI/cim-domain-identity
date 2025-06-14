@@ -1,7 +1,7 @@
-//! # Identity Context
+//! # Identity Domain
 //!
-//! This bounded context manages identity-related aggregates including Person and Organization.
-//! It provides a clear boundary for identity management within the CIM architecture.
+//! This domain module manages identity and authentication for People and Organizations.
+//! It provides core identity management capabilities within the CIM architecture.
 //!
 //! ## Key Concepts
 //!
@@ -11,18 +11,25 @@
 //!
 //! ## Architecture
 //!
-//! The context follows hexagonal architecture with:
-//! - Domain layer: Core business logic and aggregates
-//! - Application layer: Command and query handlers
-//! - Infrastructure layer: Repository implementations
-//! - Ports layer: Interfaces for inbound and outbound communication
-//! - Conceptual layer: Projections into conceptual space
+//! The domain module follows DDD principles with:
+//! - Domain layer: Core business logic and aggregates (Person, Organization)
+//! - Application layer: Command and query handlers for identity operations
+//! - Infrastructure layer: Repository implementations for persistence
+//! - Ports layer: Interfaces for authentication and authorization
+//! - Conceptual layer: Identity projections into conceptual space
+//!
+//! ## Authentication Features
+//!
+//! - **Person Authentication**: Username/password, MFA, trust levels
+//! - **Organization Authentication**: API keys, service accounts
+//! - **Security**: Password hashing, account locking, audit trails
 
 pub mod domain;
 pub mod application;
 pub mod infrastructure;
 pub mod ports;
 pub mod conceptual;
+pub mod handlers;
 
 // Re-export key types for convenience
 pub use domain::{
@@ -38,6 +45,14 @@ pub use ports::{
 pub use conceptual::{
     IdentityConceptProducer,
     IdentityDimensions,
+};
+
+pub use handlers::{
+    AuthenticationEventHandler,
+    AuthenticationRequested,
+    IdentityVerificationRequested,
+    IdentityVerified,
+    IdentityVerificationLevel,
 };
 
 /// Identity context error types

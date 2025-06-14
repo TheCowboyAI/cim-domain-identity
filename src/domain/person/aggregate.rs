@@ -3,7 +3,7 @@
 use serde::{Deserialize, Serialize};
 use cim_domain::{AggregateRoot, EntityId};
 use cim_component::Component;
-use crate::domain::value_objects::{Email, Name, Address, PhoneNumber, TrustLevel};
+use crate::domain::value_objects::{Email, Name, Address, PhoneNumber, TrustLevel, Credentials, AuthStatus, MfaSettings};
 use crate::IdentityResult;
 use super::events::PersonEvent;
 use super::commands::PersonCommand;
@@ -43,6 +43,11 @@ pub struct Person {
     pub trust_level: TrustLevel,
     pub organization_ids: Vec<crate::domain::organization::OrganizationId>,
 
+    // Authentication fields
+    pub credentials: Option<Credentials>,
+    pub auth_status: AuthStatus,
+    pub mfa_settings: MfaSettings,
+
     // Components for extensibility
     #[serde(skip)]
     components: Vec<Box<dyn Component>>,
@@ -60,6 +65,9 @@ impl Person {
             address: None,
             trust_level: TrustLevel::default(),
             organization_ids: Vec::new(),
+            credentials: None,
+            auth_status: AuthStatus::default(),
+            mfa_settings: MfaSettings::default(),
             components: Vec::new(),
         }
     }
@@ -130,6 +138,86 @@ impl Person {
                     Ok(vec![]) // Not a member
                 }
             }
+            PersonCommand::SetCredentials { credentials } => {
+                self.credentials = Some(credentials.clone());
+                Ok(vec![PersonEvent::CredentialsSet {
+                    person_id: self.id,
+                    username: credentials.username,
+                }])
+            }
+            PersonCommand::Authenticate { username, password_hash } => {
+                if let Some(creds) = &self.credentials {
+                    if creds.username == username && creds.password_hash == password_hash {
+                        self.auth_status.is_authenticated = true;
+                        self.auth_status.method = Some(crate::domain::value_objects::AuthMethod::Password);
+                        self.auth_status.last_login = Some(chrono::Utc::now());
+                        self.auth_status.failed_attempts = 0;
+                        Ok(vec![PersonEvent::AuthenticationSucceeded {
+                            person_id: self.id,
+                            method: crate::domain::value_objects::AuthMethod::Password,
+                            timestamp: chrono::Utc::now(),
+                        }])
+                    } else {
+                        self.auth_status.failed_attempts += 1;
+                        Ok(vec![PersonEvent::AuthenticationFailed {
+                            person_id: self.id,
+                            username,
+                            timestamp: chrono::Utc::now(),
+                            failed_attempts: self.auth_status.failed_attempts,
+                        }])
+                    }
+                } else {
+                    Ok(vec![]) // No credentials set
+                }
+            }
+            PersonCommand::RecordFailedAuth { username } => {
+                self.auth_status.failed_attempts += 1;
+                Ok(vec![PersonEvent::AuthenticationFailed {
+                    person_id: self.id,
+                    username,
+                    timestamp: chrono::Utc::now(),
+                    failed_attempts: self.auth_status.failed_attempts,
+                }])
+            }
+            PersonCommand::LockAccount { until } => {
+                self.auth_status.locked_until = Some(until);
+                self.auth_status.is_authenticated = false;
+                Ok(vec![PersonEvent::AccountLocked {
+                    person_id: self.id,
+                    locked_until: until,
+                    reason: "Too many failed authentication attempts".to_string(),
+                }])
+            }
+            PersonCommand::UnlockAccount => {
+                self.auth_status.locked_until = None;
+                self.auth_status.failed_attempts = 0;
+                Ok(vec![PersonEvent::AccountUnlocked {
+                    person_id: self.id,
+                    timestamp: chrono::Utc::now(),
+                }])
+            }
+            PersonCommand::EnableMfa { method, backup_codes } => {
+                self.mfa_settings.enabled = true;
+                self.mfa_settings.method = method;
+                self.mfa_settings.backup_codes = backup_codes;
+                Ok(vec![PersonEvent::MfaEnabled {
+                    person_id: self.id,
+                    method,
+                    timestamp: chrono::Utc::now(),
+                }])
+            }
+            PersonCommand::DisableMfa => {
+                self.mfa_settings.enabled = false;
+                self.mfa_settings.backup_codes.clear();
+                Ok(vec![PersonEvent::MfaDisabled {
+                    person_id: self.id,
+                    timestamp: chrono::Utc::now(),
+                }])
+            }
+            PersonCommand::UpdateLastLogin { timestamp } => {
+                self.auth_status.last_login = Some(timestamp);
+                Ok(vec![]) // No event for this, it's internal
+            }
         }
     }
 
@@ -164,6 +252,41 @@ impl Person {
             }
             PersonEvent::LeftOrganization { organization_id, .. } => {
                 self.organization_ids.retain(|id| id != organization_id);
+                self.increment_version();
+            }
+            PersonEvent::CredentialsSet { .. } => {
+                // Credentials already set in command handler
+                self.increment_version();
+            }
+            PersonEvent::AuthenticationSucceeded { method, timestamp, .. } => {
+                self.auth_status.is_authenticated = true;
+                self.auth_status.method = Some(*method);
+                self.auth_status.last_login = Some(*timestamp);
+                self.auth_status.failed_attempts = 0;
+                self.increment_version();
+            }
+            PersonEvent::AuthenticationFailed { failed_attempts, .. } => {
+                self.auth_status.failed_attempts = *failed_attempts;
+                self.increment_version();
+            }
+            PersonEvent::AccountLocked { locked_until, .. } => {
+                self.auth_status.locked_until = Some(*locked_until);
+                self.auth_status.is_authenticated = false;
+                self.increment_version();
+            }
+            PersonEvent::AccountUnlocked { .. } => {
+                self.auth_status.locked_until = None;
+                self.auth_status.failed_attempts = 0;
+                self.increment_version();
+            }
+            PersonEvent::MfaEnabled { method, .. } => {
+                self.mfa_settings.enabled = true;
+                self.mfa_settings.method = *method;
+                self.increment_version();
+            }
+            PersonEvent::MfaDisabled { .. } => {
+                self.mfa_settings.enabled = false;
+                self.mfa_settings.backup_codes.clear();
                 self.increment_version();
             }
         }

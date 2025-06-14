@@ -1,6 +1,7 @@
 //! Concept producer for the Identity context
 
-use cim_domain_conceptualspaces::{ConceptProducer, ConceptualPoint, ConceptualSpace, QualityDimension, ConceptualEntity, ConceptMap};
+use cim_domain_conceptualspaces::{ConceptProducer, ConceptualPoint, ConceptualSpace, ConceptualEntity, ConceptMap};
+use cim_domain_conceptualspaces::dimensions::QualityDimension;
 use cim_domain_conceptualspaces::concept_map::ContextId;
 use crate::{PersonEvent, OrganizationEvent};
 use uuid::Uuid;

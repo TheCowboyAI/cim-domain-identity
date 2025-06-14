@@ -1,7 +1,7 @@
 //! Events for the Person aggregate
 
 use serde::{Deserialize, Serialize};
-use crate::domain::value_objects::{Email, Name, Address, PhoneNumber, TrustLevel};
+use crate::domain::value_objects::{Email, Name, Address, PhoneNumber, TrustLevel, AuthMethod, MfaMethod};
 use crate::domain::organization::OrganizationId;
 use super::PersonId;
 
@@ -51,5 +51,52 @@ pub enum PersonEvent {
     LeftOrganization {
         person_id: PersonId,
         organization_id: OrganizationId,
+    },
+
+    /// Credentials were set
+    CredentialsSet {
+        person_id: PersonId,
+        username: String,
+    },
+
+    /// Authentication succeeded
+    AuthenticationSucceeded {
+        person_id: PersonId,
+        method: AuthMethod,
+        timestamp: chrono::DateTime<chrono::Utc>,
+    },
+
+    /// Authentication failed
+    AuthenticationFailed {
+        person_id: PersonId,
+        username: String,
+        timestamp: chrono::DateTime<chrono::Utc>,
+        failed_attempts: u32,
+    },
+
+    /// Account was locked
+    AccountLocked {
+        person_id: PersonId,
+        locked_until: chrono::DateTime<chrono::Utc>,
+        reason: String,
+    },
+
+    /// Account was unlocked
+    AccountUnlocked {
+        person_id: PersonId,
+        timestamp: chrono::DateTime<chrono::Utc>,
+    },
+
+    /// MFA was enabled
+    MfaEnabled {
+        person_id: PersonId,
+        method: MfaMethod,
+        timestamp: chrono::DateTime<chrono::Utc>,
+    },
+
+    /// MFA was disabled
+    MfaDisabled {
+        person_id: PersonId,
+        timestamp: chrono::DateTime<chrono::Utc>,
     },
 }

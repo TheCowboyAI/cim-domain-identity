@@ -83,3 +83,88 @@ impl Default for TrustLevel {
         TrustLevel::Unverified
     }
 }
+
+/// Authentication credentials
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Credentials {
+    pub username: String,
+    pub password_hash: String, // Never store plain passwords
+}
+
+impl Credentials {
+    pub fn new(username: String, password_hash: String) -> Self {
+        Credentials {
+            username: username.to_lowercase(),
+            password_hash,
+        }
+    }
+}
+
+/// Authentication method
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum AuthMethod {
+    Password,
+    OAuth2,
+    SAML,
+    ApiKey,
+    Certificate,
+}
+
+/// Authentication status
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AuthStatus {
+    pub is_authenticated: bool,
+    pub method: Option<AuthMethod>,
+    pub last_login: Option<chrono::DateTime<chrono::Utc>>,
+    pub failed_attempts: u32,
+    pub locked_until: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+impl Default for AuthStatus {
+    fn default() -> Self {
+        AuthStatus {
+            is_authenticated: false,
+            method: None,
+            last_login: None,
+            failed_attempts: 0,
+            locked_until: None,
+        }
+    }
+}
+
+/// Multi-factor authentication settings
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MfaSettings {
+    pub enabled: bool,
+    pub method: MfaMethod,
+    pub backup_codes: Vec<String>, // Hashed backup codes
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MfaMethod {
+    Totp,    // Time-based One-Time Password
+    Sms,     // SMS verification
+    Email,   // Email verification
+    App,     // Authenticator app
+}
+
+impl Default for MfaSettings {
+    fn default() -> Self {
+        MfaSettings {
+            enabled: false,
+            method: MfaMethod::Totp,
+            backup_codes: Vec::new(),
+        }
+    }
+}
+
+/// API Key for service authentication
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ApiKey {
+    pub key_hash: String,
+    pub name: String,
+    pub permissions: Vec<String>,
+    pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub last_used: Option<chrono::DateTime<chrono::Utc>>,
+}

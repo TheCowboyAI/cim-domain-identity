@@ -1,7 +1,7 @@
 //! Commands for the Person aggregate
 
 use serde::{Deserialize, Serialize};
-use crate::domain::value_objects::{Email, Name, Address, PhoneNumber, TrustLevel};
+use crate::domain::value_objects::{Email, Name, Address, PhoneNumber, TrustLevel, Credentials, MfaMethod};
 use crate::domain::organization::OrganizationId;
 
 /// Commands that can be sent to a Person aggregate
@@ -41,5 +41,43 @@ pub enum PersonCommand {
     /// Leave an organization
     LeaveOrganization {
         organization_id: OrganizationId,
+    },
+
+    /// Set authentication credentials
+    SetCredentials {
+        credentials: Credentials,
+    },
+
+    /// Authenticate the person
+    Authenticate {
+        username: String,
+        password_hash: String,
+    },
+
+    /// Record failed authentication attempt
+    RecordFailedAuth {
+        username: String,
+    },
+
+    /// Lock account after too many failed attempts
+    LockAccount {
+        until: chrono::DateTime<chrono::Utc>,
+    },
+
+    /// Unlock account
+    UnlockAccount,
+
+    /// Enable MFA
+    EnableMfa {
+        method: MfaMethod,
+        backup_codes: Vec<String>,
+    },
+
+    /// Disable MFA
+    DisableMfa,
+
+    /// Update last login time
+    UpdateLastLogin {
+        timestamp: chrono::DateTime<chrono::Utc>,
     },
 }

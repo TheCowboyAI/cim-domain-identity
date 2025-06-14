@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use cim_domain::{AggregateRoot, EntityId};
 use cim_component::Component;
 use crate::domain::person::PersonId;
+use crate::domain::value_objects::ApiKey;
 use crate::IdentityResult;
 use super::events::OrganizationEvent;
 use super::commands::OrganizationCommand;
@@ -54,6 +55,9 @@ pub struct Organization {
     pub member_ids: Vec<PersonId>,
     pub admin_ids: Vec<PersonId>,
 
+    // Authentication
+    pub api_keys: Vec<ApiKey>,
+
     // Components for extensibility
     #[serde(skip)]
     components: Vec<Box<dyn Component>>,
@@ -72,6 +76,7 @@ impl Organization {
             child_ids: Vec::new(),
             member_ids: Vec::new(),
             admin_ids: Vec::new(),
+            api_keys: Vec::new(),
             components: Vec::new(),
         }
     }
