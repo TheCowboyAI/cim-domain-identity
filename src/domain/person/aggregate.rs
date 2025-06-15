@@ -7,6 +7,7 @@ use crate::domain::value_objects::{Email, Name, Address, PhoneNumber, TrustLevel
 use crate::IdentityResult;
 use super::events::PersonEvent;
 use super::commands::PersonCommand;
+use uuid::Uuid;
 
 /// Person identifier
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -20,6 +21,14 @@ impl PersonId {
     pub fn new() -> Self {
         PersonId(EntityId::new())
     }
+
+    pub fn to_uuid(&self) -> Uuid {
+        Uuid::from(self.0)
+    }
+
+    pub fn as_entity_id(&self) -> EntityId<PersonMarker> {
+        self.0
+    }
 }
 
 impl std::fmt::Display for PersonId {
@@ -28,7 +37,7 @@ impl std::fmt::Display for PersonId {
     }
 }
 
-/// Person aggregate root
+/// Person aggregate representing a human actor in the system
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Person {
     // Entity fields
@@ -300,6 +309,25 @@ impl Person {
     /// Get components
     pub fn components(&self) -> &[Box<dyn Component>] {
         &self.components
+    }
+}
+
+impl Clone for Person {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id,
+            name: self.name.clone(),
+            email: self.email.clone(),
+            phone: self.phone.clone(),
+            address: self.address.clone(),
+            trust_level: self.trust_level,
+            organization_ids: self.organization_ids.clone(),
+            credentials: self.credentials.clone(),
+            auth_status: self.auth_status.clone(),
+            mfa_settings: self.mfa_settings.clone(),
+            components: Vec::new(), // Don't clone components as they're not cloneable
+            version: self.version,
+        }
     }
 }
 

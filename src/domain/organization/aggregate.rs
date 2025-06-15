@@ -8,6 +8,7 @@ use crate::domain::value_objects::ApiKey;
 use crate::IdentityResult;
 use super::events::OrganizationEvent;
 use super::commands::OrganizationCommand;
+use uuid::Uuid;
 
 /// Organization identifier
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -20,6 +21,14 @@ pub struct OrganizationMarker;
 impl OrganizationId {
     pub fn new() -> Self {
         OrganizationId(EntityId::new())
+    }
+
+    pub fn to_uuid(&self) -> Uuid {
+        Uuid::from(self.0)
+    }
+
+    pub fn as_entity_id(&self) -> EntityId<OrganizationMarker> {
+        self.0
     }
 }
 
@@ -248,6 +257,24 @@ impl Organization {
     /// Get components
     pub fn components(&self) -> &[Box<dyn Component>] {
         &self.components
+    }
+}
+
+impl Clone for Organization {
+    fn clone(&self) -> Self {
+        Self {
+            id: self.id,
+            version: self.version,
+            name: self.name.clone(),
+            org_type: self.org_type.clone(),
+            description: self.description.clone(),
+            parent_id: self.parent_id.clone(),
+            child_ids: self.child_ids.clone(),
+            member_ids: self.member_ids.clone(),
+            admin_ids: self.admin_ids.clone(),
+            api_keys: self.api_keys.clone(),
+            components: Vec::new(), // Don't clone components as they're not cloneable
+        }
     }
 }
 

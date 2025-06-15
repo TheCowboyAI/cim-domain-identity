@@ -6,13 +6,11 @@
 use crate::domain::person::{Person, PersonId};
 use crate::domain::organization::{Organization, OrganizationId};
 use cim_domain::{
-    DomainError, DomainResult, EventHandler,
+    DomainError, DomainResult, DomainEvent,
     AggregateRepository,
 };
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use std::collections::HashMap;
 
 /// Identity reference for authentication
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -50,6 +48,26 @@ pub struct IdentityVerificationRequested {
     pub requested_at: chrono::DateTime<chrono::Utc>,
 }
 
+impl DomainEvent for IdentityVerificationRequested {
+    fn subject(&self) -> String {
+        match &self.identity_ref {
+            IdentityRef::Person(id) => format!("identity.person.{}.verification.requested", id.to_uuid()),
+            IdentityRef::Organization(id) => format!("identity.organization.{}.verification.requested", id.to_uuid()),
+        }
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        match &self.identity_ref {
+            IdentityRef::Person(id) => id.to_uuid(),
+            IdentityRef::Organization(id) => id.to_uuid(),
+        }
+    }
+
+    fn event_type(&self) -> &'static str {
+        "IdentityVerificationRequested"
+    }
+}
+
 /// Identity verified event
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct IdentityVerified {
@@ -58,6 +76,26 @@ pub struct IdentityVerified {
     pub verification_level: IdentityVerificationLevel,
     pub attributes_verified: Vec<String>,
     pub verified_at: chrono::DateTime<chrono::Utc>,
+}
+
+impl DomainEvent for IdentityVerified {
+    fn subject(&self) -> String {
+        match &self.identity_ref {
+            IdentityRef::Person(id) => format!("identity.person.{}.verified", id.to_uuid()),
+            IdentityRef::Organization(id) => format!("identity.organization.{}.verified", id.to_uuid()),
+        }
+    }
+
+    fn aggregate_id(&self) -> Uuid {
+        match &self.identity_ref {
+            IdentityRef::Person(id) => id.to_uuid(),
+            IdentityRef::Organization(id) => id.to_uuid(),
+        }
+    }
+
+    fn event_type(&self) -> &'static str {
+        "IdentityVerified"
+    }
 }
 
 /// Identity verification level
@@ -107,12 +145,20 @@ where
                 IdentityRef::Person(person_id) => {
                     // Load person to verify they exist
                     let person = self.person_repository
-                        .load(&cim_domain::EntityId::from_uuid(person_id.0))
-                        .await?;
+                        .load(*person_id)
+                        .map_err(|e| DomainError::InternalError(e))?;
+
+                    // Check if person exists
+                    if person.is_none() {
+                        return Err(DomainError::EntityNotFound {
+                            entity_type: "Person".to_string(),
+                            id: person_id.to_uuid().to_string(),
+                        });
+                    }
 
                     // Check if person is active
-                    if !self.is_person_active(&person) {
-                        return Err(DomainError::ValidationFailed(
+                    if !self.is_person_active(&person.unwrap()) {
+                        return Err(DomainError::ValidationError(
                             "Person is not active".to_string()
                         ));
                     }
@@ -128,12 +174,20 @@ where
                 IdentityRef::Organization(org_id) => {
                     // Load organization to verify it exists
                     let org = self.organization_repository
-                        .load(&cim_domain::EntityId::from_uuid(org_id.0))
-                        .await?;
+                        .load(*org_id)
+                        .map_err(|e| DomainError::InternalError(e))?;
+
+                    // Check if organization exists
+                    if org.is_none() {
+                        return Err(DomainError::EntityNotFound {
+                            entity_type: "Organization".to_string(),
+                            id: org_id.to_uuid().to_string(),
+                        });
+                    }
 
                     // Check if organization is active
-                    if !self.is_organization_active(&org) {
-                        return Err(DomainError::ValidationFailed(
+                    if !self.is_organization_active(&org.unwrap()) {
+                        return Err(DomainError::ValidationError(
                             "Organization is not active".to_string()
                         ));
                     }
@@ -163,40 +217,54 @@ where
             IdentityRef::Person(person_id) => {
                 // Load person
                 let person = self.person_repository
-                    .load(&cim_domain::EntityId::from_uuid(person_id.0))
-                    .await?;
+                    .load(*person_id)
+                    .map_err(|e| DomainError::InternalError(e))?;
 
-                // Perform verification based on available attributes
-                let (verification_level, attributes_verified) =
-                    self.verify_person_identity(&person).await?;
+                if let Some(person) = person {
+                    // Perform verification based on available attributes
+                    let (verification_level, attributes_verified) =
+                        self.verify_person_identity(&person).await?;
 
-                // Create identity verified event
-                events.push(Box::new(IdentityVerified {
-                    request_id: event.request_id,
-                    identity_ref: event.identity_ref.clone(),
-                    verification_level,
-                    attributes_verified,
-                    verified_at: chrono::Utc::now(),
-                }) as Box<dyn cim_domain::DomainEvent>);
+                    // Create identity verified event
+                    events.push(Box::new(IdentityVerified {
+                        request_id: event.request_id,
+                        identity_ref: event.identity_ref.clone(),
+                        verification_level,
+                        attributes_verified,
+                        verified_at: chrono::Utc::now(),
+                    }) as Box<dyn cim_domain::DomainEvent>);
+                } else {
+                    return Err(DomainError::EntityNotFound {
+                        entity_type: "Person".to_string(),
+                        id: person_id.to_uuid().to_string(),
+                    });
+                }
             }
             IdentityRef::Organization(org_id) => {
                 // Load organization
                 let org = self.organization_repository
-                    .load(&cim_domain::EntityId::from_uuid(org_id.0))
-                    .await?;
+                    .load(*org_id)
+                    .map_err(|e| DomainError::InternalError(e))?;
 
-                // Perform verification based on available attributes
-                let (verification_level, attributes_verified) =
-                    self.verify_organization_identity(&org).await?;
+                if let Some(org) = org {
+                    // Perform verification based on available attributes
+                    let (verification_level, attributes_verified) =
+                        self.verify_organization_identity(&org).await?;
 
-                // Create identity verified event
-                events.push(Box::new(IdentityVerified {
-                    request_id: event.request_id,
-                    identity_ref: event.identity_ref.clone(),
-                    verification_level,
-                    attributes_verified,
-                    verified_at: chrono::Utc::now(),
-                }) as Box<dyn cim_domain::DomainEvent>);
+                    // Create identity verified event
+                    events.push(Box::new(IdentityVerified {
+                        request_id: event.request_id,
+                        identity_ref: event.identity_ref.clone(),
+                        verification_level,
+                        attributes_verified,
+                        verified_at: chrono::Utc::now(),
+                    }) as Box<dyn cim_domain::DomainEvent>);
+                } else {
+                    return Err(DomainError::EntityNotFound {
+                        entity_type: "Organization".to_string(),
+                        id: org_id.to_uuid().to_string(),
+                    });
+                }
             }
         }
 
@@ -204,14 +272,14 @@ where
     }
 
     /// Check if person is active
-    fn is_person_active(&self, person: &Person) -> bool {
+    fn is_person_active(&self, _person: &Person) -> bool {
         // In a real implementation, this would check person status
         // For now, we'll assume all persons are active
         true
     }
 
     /// Check if organization is active
-    fn is_organization_active(&self, org: &Organization) -> bool {
+    fn is_organization_active(&self, _org: &Organization) -> bool {
         // In a real implementation, this would check organization status
         // For now, we'll assume all organizations are active
         true
@@ -220,10 +288,10 @@ where
     /// Verify person identity
     async fn verify_person_identity(
         &self,
-        person: &Person,
+        _person: &Person,
     ) -> DomainResult<(IdentityVerificationLevel, Vec<String>)> {
         let mut attributes_verified = Vec::new();
-        let mut verification_level = IdentityVerificationLevel::None;
+        let verification_level;
 
         // Check email verification
         // In real implementation, would check if email is verified
@@ -234,14 +302,14 @@ where
         // In real implementation, would check if phone is verified
         if true { // Placeholder for phone verification check
             attributes_verified.push("phone".to_string());
-            verification_level = IdentityVerificationLevel::Phone;
+            let _verification_level = IdentityVerificationLevel::Phone;
         }
 
         // Check document verification
         // In real implementation, would check if documents are verified
         if false { // Placeholder for document verification check
             attributes_verified.push("government_id".to_string());
-            verification_level = IdentityVerificationLevel::Document;
+            let _verification_level = IdentityVerificationLevel::Document;
         }
 
         Ok((verification_level, attributes_verified))
@@ -250,10 +318,10 @@ where
     /// Verify organization identity
     async fn verify_organization_identity(
         &self,
-        org: &Organization,
+        _org: &Organization,
     ) -> DomainResult<(IdentityVerificationLevel, Vec<String>)> {
         let mut attributes_verified = Vec::new();
-        let mut verification_level = IdentityVerificationLevel::None;
+        let verification_level;
 
         // Check business registration
         attributes_verified.push("business_registration".to_string());
