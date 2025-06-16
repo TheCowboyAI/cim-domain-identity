@@ -14,6 +14,15 @@ pub trait PersonRepository: Send + Sync {
 
     /// Check if email exists
     async fn email_exists(&self, email: &str) -> IdentityResult<bool>;
+
+    /// Find a person by email
+    async fn find_by_email(&self, email: &str) -> IdentityResult<Option<Person>>;
+
+    /// Get all persons (for cross-aggregate queries)
+    async fn find_all(&self) -> IdentityResult<Vec<Person>>;
+
+    /// Search people by name (basic text matching)
+    async fn search_by_name(&self, name_query: &str) -> IdentityResult<Vec<Person>>;
 }
 
 /// Repository interface for Organization aggregates
@@ -27,4 +36,13 @@ pub trait OrganizationRepository: Send + Sync {
 
     /// Check if organization name exists
     async fn name_exists(&self, name: &str) -> IdentityResult<bool>;
+
+    /// Find an organization by name
+    async fn find_by_name(&self, name: &str) -> IdentityResult<Option<Organization>>;
+
+    /// Get all organizations (for cross-aggregate queries)
+    async fn find_all(&self) -> IdentityResult<Vec<Organization>>;
+
+    /// Search organizations by name (basic text matching)
+    async fn search_by_name(&self, name_query: &str) -> IdentityResult<Vec<Organization>>;
 }

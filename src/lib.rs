@@ -35,6 +35,8 @@ pub mod handlers;
 pub use domain::{
     person::{Person, PersonId, PersonCommand, PersonEvent},
     organization::{Organization, OrganizationId, OrganizationCommand, OrganizationEvent, OrganizationType},
+    // Re-export value objects
+    Email, Name, Address, PhoneNumber, TrustLevel, Credentials, AuthStatus, MfaSettings, MfaMethod,
 };
 
 pub use ports::{
@@ -75,6 +77,9 @@ pub enum IdentityError {
 
     #[error("Domain error: {0}")]
     DomainError(#[from] cim_domain::DomainError),
+
+    #[error("Event store error: {0}")]
+    EventStoreError(#[from] cim_domain::infrastructure::EventStoreError),
 }
 
 pub type IdentityResult<T> = Result<T, IdentityError>;
