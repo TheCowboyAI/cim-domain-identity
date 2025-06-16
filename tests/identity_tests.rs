@@ -43,19 +43,24 @@ fn test_person_command_handling() {
     let email = Email::new("jane.smith@example.com".to_string()).unwrap();
     let mut person = Person::new(name.clone(), email.clone());
 
-    // When: Updating email
+    // When: Changing email
     let new_email = Email::new("jane.s@example.com".to_string()).unwrap();
-    let command = PersonCommand::UpdateEmail { new_email: new_email.clone() };
+    let command = PersonCommand::ChangeEmail { new_email: new_email.clone() };
     let events = person.handle_command(command).unwrap();
 
-    // Then: Email update event is generated
-    assert_eq!(events.len(), 1);
+    // Then: Email change events are generated
+    assert_eq!(events.len(), 2); // EmailRemoved + EmailAdded
     match &events[0] {
-        PersonEvent::EmailUpdated { old_email, new_email: updated, .. } => {
+        PersonEvent::EmailRemoved { old_email, .. } => {
             assert_eq!(old_email.as_str(), "jane.smith@example.com");
+        }
+        _ => panic!("Expected EmailRemoved event"),
+    }
+    match &events[1] {
+        PersonEvent::EmailAdded { new_email: updated, .. } => {
             assert_eq!(updated.as_str(), "jane.s@example.com");
         }
-        _ => panic!("Expected EmailUpdated event"),
+        _ => panic!("Expected EmailAdded event"),
     }
 }
 

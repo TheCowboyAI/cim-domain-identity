@@ -93,30 +93,77 @@ impl Person {
                     email,
                 }])
             }
-            PersonCommand::UpdateEmail { new_email } => {
+            PersonCommand::ChangeEmail { new_email } => {
                 let old_email = self.email.clone();
-                self.email = new_email.clone();
-                Ok(vec![PersonEvent::EmailUpdated {
-                    person_id: self.id,
-                    old_email,
-                    new_email,
-                }])
+                
+                // Generate remove/add event sequence
+                let mut events = vec![
+                    PersonEvent::EmailRemoved {
+                        person_id: self.id,
+                        old_email,
+                    },
+                    PersonEvent::EmailAdded {
+                        person_id: self.id,
+                        new_email,
+                    },
+                ];
+                
+                // Apply events to self
+                for event in &events {
+                    self.apply_event(event);
+                }
+                
+                Ok(events)
             }
-            PersonCommand::UpdatePhone { phone_number } => {
-                self.phone = Some(phone_number.clone());
-                Ok(vec![PersonEvent::PhoneUpdated {
+            PersonCommand::ChangePhone { phone_number } => {
+                let mut events = Vec::new();
+                
+                // If there's an existing phone, remove it first
+                if let Some(old_phone) = &self.phone {
+                    events.push(PersonEvent::PhoneRemoved {
+                        person_id: self.id,
+                        phone_number: old_phone.clone(),
+                    });
+                }
+                
+                // Add the new phone
+                events.push(PersonEvent::PhoneAdded {
                     person_id: self.id,
-                    phone_number,
-                }])
+                    phone_number: phone_number.clone(),
+                });
+                
+                // Apply events to self
+                for event in &events {
+                    self.apply_event(event);
+                }
+                
+                Ok(events)
             }
-            PersonCommand::UpdateAddress { address } => {
-                self.address = Some(address.clone());
-                Ok(vec![PersonEvent::AddressUpdated {
+            PersonCommand::ChangeAddress { address } => {
+                let mut events = Vec::new();
+                
+                // If there's an existing address, remove it first
+                if let Some(old_address) = &self.address {
+                    events.push(PersonEvent::AddressRemoved {
+                        person_id: self.id,
+                        address: old_address.clone(),
+                    });
+                }
+                
+                // Add the new address
+                events.push(PersonEvent::AddressAdded {
                     person_id: self.id,
-                    address,
-                }])
+                    address: address.clone(),
+                });
+                
+                // Apply events to self
+                for event in &events {
+                    self.apply_event(event);
+                }
+                
+                Ok(events)
             }
-            PersonCommand::UpdateTrustLevel { trust_level } => {
+            PersonCommand::ChangeTrustLevel { trust_level } => {
                 let old_level = self.trust_level;
                 self.trust_level = trust_level;
                 Ok(vec![PersonEvent::TrustLevelChanged {
@@ -223,9 +270,12 @@ impl Person {
                     timestamp: chrono::Utc::now(),
                 }])
             }
-            PersonCommand::UpdateLastLogin { timestamp } => {
+            PersonCommand::RecordLogin { timestamp } => {
                 self.auth_status.last_login = Some(timestamp);
-                Ok(vec![]) // No event for this, it's internal
+                Ok(vec![PersonEvent::LoginRecorded {
+                    person_id: self.id,
+                    timestamp,
+                }])
             }
         }
     }
@@ -237,15 +287,27 @@ impl Person {
                 // Initial state already set in constructor
                 self.increment_version();
             }
-            PersonEvent::EmailUpdated { new_email, .. } => {
+            PersonEvent::EmailRemoved { old_email, .. } => {
+                self.email = old_email.clone();
+                self.increment_version();
+            }
+            PersonEvent::EmailAdded { new_email, .. } => {
                 self.email = new_email.clone();
                 self.increment_version();
             }
-            PersonEvent::PhoneUpdated { phone_number, .. } => {
+            PersonEvent::PhoneRemoved { phone_number, .. } => {
+                self.phone = None;
+                self.increment_version();
+            }
+            PersonEvent::PhoneAdded { phone_number, .. } => {
                 self.phone = Some(phone_number.clone());
                 self.increment_version();
             }
-            PersonEvent::AddressUpdated { address, .. } => {
+            PersonEvent::AddressRemoved { address, .. } => {
+                self.address = None;
+                self.increment_version();
+            }
+            PersonEvent::AddressAdded { address, .. } => {
                 self.address = Some(address.clone());
                 self.increment_version();
             }
@@ -296,6 +358,10 @@ impl Person {
             PersonEvent::MfaDisabled { .. } => {
                 self.mfa_settings.enabled = false;
                 self.mfa_settings.backup_codes.clear();
+                self.increment_version();
+            }
+            PersonEvent::LoginRecorded { timestamp, .. } => {
+                self.auth_status.last_login = Some(*timestamp);
                 self.increment_version();
             }
         }

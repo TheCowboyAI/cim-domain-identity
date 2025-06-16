@@ -13,13 +13,13 @@ pub enum OrganizationCommand {
         org_type: OrganizationType,
     },
 
-    /// Update organization name
-    UpdateName {
+    /// Change organization name
+    ChangeName {
         new_name: String,
     },
 
-    /// Update organization description
-    UpdateDescription {
+    /// Change organization description
+    ChangeDescription {
         description: String,
     },
 

@@ -15,21 +15,38 @@ pub enum PersonEvent {
         email: Email,
     },
 
-    /// Person's email was updated
-    EmailUpdated {
+    /// Person's email was removed
+    EmailRemoved {
         person_id: PersonId,
         old_email: Email,
+    },
+
+    /// Person's email was added
+    EmailAdded {
+        person_id: PersonId,
         new_email: Email,
     },
 
-    /// Person's phone was updated
-    PhoneUpdated {
+    /// Person's phone was removed
+    PhoneRemoved {
         person_id: PersonId,
         phone_number: PhoneNumber,
     },
 
-    /// Person's address was updated
-    AddressUpdated {
+    /// Person's phone was added
+    PhoneAdded {
+        person_id: PersonId,
+        phone_number: PhoneNumber,
+    },
+
+    /// Person's address was removed
+    AddressRemoved {
+        person_id: PersonId,
+        address: Address,
+    },
+
+    /// Person's address was added
+    AddressAdded {
         person_id: PersonId,
         address: Address,
     },
@@ -96,6 +113,12 @@ pub enum PersonEvent {
 
     /// MFA was disabled
     MfaDisabled {
+        person_id: PersonId,
+        timestamp: chrono::DateTime<chrono::Utc>,
+    },
+
+    /// Login was recorded
+    LoginRecorded {
         person_id: PersonId,
         timestamp: chrono::DateTime<chrono::Utc>,
     },

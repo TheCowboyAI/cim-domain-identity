@@ -100,21 +100,51 @@ impl Organization {
                     org_type,
                 }])
             }
-            OrganizationCommand::UpdateName { new_name } => {
+            OrganizationCommand::ChangeName { new_name } => {
                 let old_name = self.name.clone();
-                self.name = new_name.clone();
-                Ok(vec![OrganizationEvent::NameUpdated {
-                    organization_id: self.id,
-                    old_name,
-                    new_name,
-                }])
+                
+                // Generate remove/change event sequence
+                let events = vec![
+                    OrganizationEvent::NameRemoved {
+                        organization_id: self.id,
+                        old_name,
+                    },
+                    OrganizationEvent::NameChanged {
+                        organization_id: self.id,
+                        new_name,
+                    },
+                ];
+                
+                // Apply events to self
+                for event in &events {
+                    self.apply_event(event);
+                }
+                
+                Ok(events)
             }
-            OrganizationCommand::UpdateDescription { description } => {
-                self.description = Some(description.clone());
-                Ok(vec![OrganizationEvent::DescriptionUpdated {
+            OrganizationCommand::ChangeDescription { description } => {
+                let mut events = Vec::new();
+                
+                // If there's an existing description, remove it first
+                if let Some(old_description) = &self.description {
+                    events.push(OrganizationEvent::DescriptionRemoved {
+                        organization_id: self.id,
+                        old_description: Some(old_description.clone()),
+                    });
+                }
+                
+                // Set the new description
+                events.push(OrganizationEvent::DescriptionSet {
                     organization_id: self.id,
-                    description,
-                }])
+                    description: description.clone(),
+                });
+                
+                // Apply events to self
+                for event in &events {
+                    self.apply_event(event);
+                }
+                
+                Ok(events)
             }
             OrganizationCommand::AddMember { person_id } => {
                 if !self.member_ids.contains(&person_id) {
@@ -203,11 +233,19 @@ impl Organization {
                 // Initial state already set in constructor
                 self.increment_version();
             }
-            OrganizationEvent::NameUpdated { new_name, .. } => {
+            OrganizationEvent::NameRemoved { old_name, .. } => {
+                self.name = old_name.clone();
+                self.increment_version();
+            }
+            OrganizationEvent::NameChanged { new_name, .. } => {
                 self.name = new_name.clone();
                 self.increment_version();
             }
-            OrganizationEvent::DescriptionUpdated { description, .. } => {
+            OrganizationEvent::DescriptionRemoved { .. } => {
+                self.description = None;
+                self.increment_version();
+            }
+            OrganizationEvent::DescriptionSet { description, .. } => {
                 self.description = Some(description.clone());
                 self.increment_version();
             }

@@ -101,29 +101,29 @@ mod person_aggregate_tests {
             Email::new("carol@example.com".to_string()).unwrap()
         );
         
-        // When: Updating phone number
+        // When: Changing phone number
         let new_phone = PhoneNumber {
             country_code: "+1".to_string(),
             number: "555-1234".to_string(),
         };
-        let command = PersonCommand::UpdatePhone { phone_number: new_phone.clone() };
+        let command = PersonCommand::ChangePhone { phone_number: new_phone.clone() };
         let events = person.handle_command(command).unwrap();
         
-        // Then: Phone is updated
-        assert_eq!(events.len(), 1);
+        // Then: Phone change events are generated
+        assert_eq!(events.len(), 1); // Only PhoneAdded since no existing phone
         match &events[0] {
-            PersonEvent::PhoneUpdated { phone_number, .. } => {
+            PersonEvent::PhoneAdded { phone_number, .. } => {
                 assert_eq!(phone_number.country_code, "+1");
                 assert_eq!(phone_number.number, "555-1234");
             }
-            _ => panic!("Expected PhoneUpdated event"),
+            _ => panic!("Expected PhoneAdded event"),
         }
         
         // Apply the event
         person.apply_event(&events[0]);
         assert!(person.phone.is_some());
         
-        // When: Updating address
+        // When: Changing address
         let new_address = Address {
             street: "123 Main St".to_string(),
             city: "Boston".to_string(),
@@ -131,16 +131,16 @@ mod person_aggregate_tests {
             postal_code: "02101".to_string(),
             country: "USA".to_string(),
         };
-        let address_command = PersonCommand::UpdateAddress { address: new_address.clone() };
+        let address_command = PersonCommand::ChangeAddress { address: new_address.clone() };
         let address_events = person.handle_command(address_command).unwrap();
         
-        // Then: Address is updated
-        assert_eq!(address_events.len(), 1);
+        // Then: Address change events are generated
+        assert_eq!(address_events.len(), 1); // Only AddressAdded since no existing address
         match &address_events[0] {
-            PersonEvent::AddressUpdated { address, .. } => {
+            PersonEvent::AddressAdded { address, .. } => {
                 assert_eq!(address.city, "Boston");
             }
-            _ => panic!("Expected AddressUpdated event"),
+            _ => panic!("Expected AddressAdded event"),
         }
     }
 
@@ -156,8 +156,8 @@ mod person_aggregate_tests {
         // Verify initial trust level
         assert_eq!(person.trust_level, TrustLevel::Unverified);
         
-        // When: Updating trust level to EmailVerified
-        let command = PersonCommand::UpdateTrustLevel { 
+        // When: Changing trust level to EmailVerified
+        let command = PersonCommand::ChangeTrustLevel { 
             trust_level: TrustLevel::EmailVerified 
         };
         let events = person.handle_command(command).unwrap();
@@ -276,7 +276,7 @@ mod organization_aggregate_tests {
         // When: Setting organization description
         let description = "A global technology company focused on innovation".to_string();
         
-        let command = OrganizationCommand::UpdateDescription { description: description.clone() };
+        let command = OrganizationCommand::ChangeDescription { description: description.clone() };
         let events = org.handle_command(command).unwrap();
         
         // Then: Description is updated

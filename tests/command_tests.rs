@@ -50,33 +50,33 @@ mod person_command_tests {
     /// Test for User Story I3: Profile Update Commands
     #[test]
     fn test_profile_update_commands() {
-        // Test email update command
+        // Test email change command
         let new_email = Email::new("newemail@example.com".to_string()).unwrap();
-        let email_cmd = PersonCommand::UpdateEmail { new_email: new_email.clone() };
+        let email_cmd = PersonCommand::ChangeEmail { new_email: new_email.clone() };
         
         match email_cmd {
-            PersonCommand::UpdateEmail { new_email: email } => {
+            PersonCommand::ChangeEmail { new_email: email } => {
                 assert_eq!(email.as_str(), "newemail@example.com");
             }
-            _ => panic!("Expected UpdateEmail command"),
+            _ => panic!("Expected ChangeEmail command"),
         }
         
-        // Test phone update command
+        // Test phone change command
         let new_phone = PhoneNumber {
             country_code: "+44".to_string(),
             number: "7700900123".to_string(),
         };
-        let phone_cmd = PersonCommand::UpdatePhone { phone_number: new_phone.clone() };
+        let phone_cmd = PersonCommand::ChangePhone { phone_number: new_phone.clone() };
         
         match phone_cmd {
-            PersonCommand::UpdatePhone { phone_number } => {
+            PersonCommand::ChangePhone { phone_number } => {
                 assert_eq!(phone_number.country_code, "+44");
                 assert_eq!(phone_number.number, "7700900123");
             }
-            _ => panic!("Expected UpdatePhone command"),
+            _ => panic!("Expected ChangePhone command"),
         }
         
-        // Test address update command
+        // Test address change command
         let new_address = Address {
             street: "123 Main St".to_string(),
             city: "London".to_string(),
@@ -84,13 +84,13 @@ mod person_command_tests {
             postal_code: "SW1A 1AA".to_string(),
             country: "UK".to_string(),
         };
-        let address_cmd = PersonCommand::UpdateAddress { address: new_address.clone() };
+        let address_cmd = PersonCommand::ChangeAddress { address: new_address.clone() };
         
         match address_cmd {
-            PersonCommand::UpdateAddress { address } => {
+            PersonCommand::ChangeAddress { address } => {
                 assert_eq!(address.city, "London");
             }
-            _ => panic!("Expected UpdateAddress command"),
+            _ => panic!("Expected ChangeAddress command"),
         }
     }
 
@@ -132,15 +132,15 @@ mod person_command_tests {
         // Given: Session management data
         let timestamp = Utc::now();
         
-        // When: Creating last login update command
-        let command = PersonCommand::UpdateLastLogin { timestamp };
+        // When: Creating record login command
+        let command = PersonCommand::RecordLogin { timestamp };
         
         // Then: Command contains timestamp
         match command {
-            PersonCommand::UpdateLastLogin { timestamp: ts } => {
+            PersonCommand::RecordLogin { timestamp: ts } => {
                 assert_eq!(ts, timestamp);
             }
-            _ => panic!("Expected UpdateLastLogin command"),
+            _ => panic!("Expected RecordLogin command"),
         }
         
         // Test account locking
@@ -159,18 +159,18 @@ mod person_command_tests {
     #[test]
     fn test_clear_optional_fields_commands() {
         // Test clearing phone - using empty strings
-        let clear_phone_cmd = PersonCommand::UpdatePhone { 
+        let clear_phone_cmd = PersonCommand::ChangePhone { 
             phone_number: PhoneNumber {
                 country_code: "".to_string(),
                 number: "".to_string(),
             }
         };
         match clear_phone_cmd {
-            PersonCommand::UpdatePhone { phone_number } => {
+            PersonCommand::ChangePhone { phone_number } => {
                 assert_eq!(phone_number.country_code, "");
                 assert_eq!(phone_number.number, "");
             }
-            _ => panic!("Expected UpdatePhone command"),
+            _ => panic!("Expected ChangePhone command"),
         }
         
         // Test clearing address - Note: Address is not optional in the current API
@@ -312,14 +312,14 @@ mod command_validation_tests {
         assert_eq!(phone.number, "555-1234");
         
         // Test phone in command
-        let command = PersonCommand::UpdatePhone { phone_number: phone.clone() };
+        let command = PersonCommand::ChangePhone { phone_number: phone.clone() };
         
         match command {
-            PersonCommand::UpdatePhone { phone_number: p } => {
+            PersonCommand::ChangePhone { phone_number: p } => {
                 assert_eq!(p.country_code, phone.country_code);
                 assert_eq!(p.number, phone.number);
             }
-            _ => panic!("Expected UpdatePhone command"),
+            _ => panic!("Expected ChangePhone command"),
         }
     }
 } 

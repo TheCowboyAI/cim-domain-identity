@@ -90,48 +90,60 @@ mod person_event_tests {
         }
     }
 
-    /// Test for User Story I3: Profile Update Events
+    /// Test for User Story I3: Profile Change Events
     #[test]
-    fn test_profile_update_events() {
-        // Test EmailUpdated event
+    fn test_profile_change_events() {
+        // Test EmailRemoved event
         let person_id = PersonId::new();
         let old_email = Email::new("old@example.com".to_string()).unwrap();
-        let new_email = Email::new("new@example.com".to_string()).unwrap();
         
-        let email_event = PersonEvent::EmailUpdated {
+        let email_removed_event = PersonEvent::EmailRemoved {
             person_id,
             old_email: old_email.clone(),
+        };
+        
+        match email_removed_event {
+            PersonEvent::EmailRemoved { old_email, .. } => {
+                assert_eq!(old_email.as_str(), "old@example.com");
+            }
+            _ => panic!("Expected EmailRemoved event"),
+        }
+        
+        // Test EmailAdded event
+        let new_email = Email::new("new@example.com".to_string()).unwrap();
+        
+        let email_added_event = PersonEvent::EmailAdded {
+            person_id,
             new_email: new_email.clone(),
         };
         
-        match email_event {
-            PersonEvent::EmailUpdated { old_email: old, new_email: new, .. } => {
-                assert_eq!(old.as_str(), "old@example.com");
-                assert_eq!(new.as_str(), "new@example.com");
+        match email_added_event {
+            PersonEvent::EmailAdded { new_email, .. } => {
+                assert_eq!(new_email.as_str(), "new@example.com");
             }
-            _ => panic!("Expected EmailUpdated event"),
+            _ => panic!("Expected EmailAdded event"),
         }
         
-        // Test PhoneUpdated event
+        // Test PhoneAdded event
         let phone = PhoneNumber {
             country_code: "+44".to_string(),
             number: "7700900123".to_string(),
         };
         
-        let phone_event = PersonEvent::PhoneUpdated {
+        let phone_event = PersonEvent::PhoneAdded {
             person_id,
             phone_number: phone.clone(),
         };
         
         match phone_event {
-            PersonEvent::PhoneUpdated { phone_number, .. } => {
+            PersonEvent::PhoneAdded { phone_number, .. } => {
                 assert_eq!(phone_number.country_code, "+44");
                 assert_eq!(phone_number.number, "7700900123");
             }
-            _ => panic!("Expected PhoneUpdated event"),
+            _ => panic!("Expected PhoneAdded event"),
         }
         
-        // Test AddressUpdated event
+        // Test AddressAdded event
         let address = Address {
             street: "123 Main St".to_string(),
             city: "Boston".to_string(),
@@ -140,17 +152,17 @@ mod person_event_tests {
             country: "USA".to_string(),
         };
         
-        let address_event = PersonEvent::AddressUpdated {
+        let address_event = PersonEvent::AddressAdded {
             person_id,
             address: address.clone(),
         };
         
         match address_event {
-            PersonEvent::AddressUpdated { address: addr, .. } => {
+            PersonEvent::AddressAdded { address: addr, .. } => {
                 assert_eq!(addr.city, "Boston");
                 assert_eq!(addr.state, "MA");
             }
-            _ => panic!("Expected AddressUpdated event"),
+            _ => panic!("Expected AddressAdded event"),
         }
     }
 

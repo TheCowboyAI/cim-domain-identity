@@ -14,15 +14,26 @@ pub enum OrganizationEvent {
         org_type: OrganizationType,
     },
 
-    /// Organization name was updated
-    NameUpdated {
+    /// Organization name was removed
+    NameRemoved {
         organization_id: OrganizationId,
         old_name: String,
+    },
+
+    /// Organization name was changed
+    NameChanged {
+        organization_id: OrganizationId,
         new_name: String,
     },
 
-    /// Organization description was updated
-    DescriptionUpdated {
+    /// Organization description was removed
+    DescriptionRemoved {
+        organization_id: OrganizationId,
+        old_description: Option<String>,
+    },
+
+    /// Organization description was set
+    DescriptionSet {
         organization_id: OrganizationId,
         description: String,
     },

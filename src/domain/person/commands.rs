@@ -13,23 +13,23 @@ pub enum PersonCommand {
         email: Email,
     },
 
-    /// Update person's email
-    UpdateEmail {
+    /// Change person's email address
+    ChangeEmail {
         new_email: Email,
     },
 
-    /// Update person's phone number
-    UpdatePhone {
+    /// Change person's phone number
+    ChangePhone {
         phone_number: PhoneNumber,
     },
 
-    /// Update person's address
-    UpdateAddress {
+    /// Change person's address
+    ChangeAddress {
         address: Address,
     },
 
-    /// Update person's trust level
-    UpdateTrustLevel {
+    /// Change person's trust level
+    ChangeTrustLevel {
         trust_level: TrustLevel,
     },
 
@@ -76,8 +76,8 @@ pub enum PersonCommand {
     /// Disable MFA
     DisableMfa,
 
-    /// Update last login time
-    UpdateLastLogin {
+    /// Record login event
+    RecordLogin {
         timestamp: chrono::DateTime<chrono::Utc>,
     },
 }
