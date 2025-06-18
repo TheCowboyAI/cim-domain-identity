@@ -18,6 +18,12 @@ pub struct OrganizationId(EntityId<OrganizationMarker>);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct OrganizationMarker;
 
+impl Default for OrganizationId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl OrganizationId {
     pub fn new() -> Self {
         OrganizationId(EntityId::new())
@@ -304,9 +310,9 @@ impl Clone for Organization {
             id: self.id,
             version: self.version,
             name: self.name.clone(),
-            org_type: self.org_type.clone(),
+            org_type: self.org_type,
             description: self.description.clone(),
-            parent_id: self.parent_id.clone(),
+            parent_id: self.parent_id,
             child_ids: self.child_ids.clone(),
             member_ids: self.member_ids.clone(),
             admin_ids: self.admin_ids.clone(),

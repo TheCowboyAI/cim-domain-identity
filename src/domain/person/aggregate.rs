@@ -17,6 +17,12 @@ pub struct PersonId(EntityId<PersonMarker>);
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct PersonMarker;
 
+impl Default for PersonId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PersonId {
     pub fn new() -> Self {
         PersonId(EntityId::new())
@@ -97,7 +103,7 @@ impl Person {
                 let old_email = self.email.clone();
                 
                 // Generate remove/add event sequence
-                let mut events = vec![
+                let events = vec![
                     PersonEvent::EmailRemoved {
                         person_id: self.id,
                         old_email,
@@ -295,7 +301,7 @@ impl Person {
                 self.email = new_email.clone();
                 self.increment_version();
             }
-            PersonEvent::PhoneRemoved { phone_number, .. } => {
+            PersonEvent::PhoneRemoved {  .. } => {
                 self.phone = None;
                 self.increment_version();
             }
@@ -303,7 +309,7 @@ impl Person {
                 self.phone = Some(phone_number.clone());
                 self.increment_version();
             }
-            PersonEvent::AddressRemoved { address, .. } => {
+            PersonEvent::AddressRemoved {  .. } => {
                 self.address = None;
                 self.increment_version();
             }

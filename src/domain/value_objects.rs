@@ -70,7 +70,9 @@ pub struct PhoneNumber {
 
 /// Trust level for identity verification
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum TrustLevel {
+    #[default]
     Unverified = 0,
     EmailVerified = 1,
     PhoneVerified = 2,
@@ -78,11 +80,6 @@ pub enum TrustLevel {
     FullyVerified = 4,
 }
 
-impl Default for TrustLevel {
-    fn default() -> Self {
-        TrustLevel::Unverified
-    }
-}
 
 /// Authentication credentials
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -112,6 +109,7 @@ pub enum AuthMethod {
 
 /// Authentication status
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct AuthStatus {
     pub is_authenticated: bool,
     pub method: Option<AuthMethod>,
@@ -120,17 +118,6 @@ pub struct AuthStatus {
     pub locked_until: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-impl Default for AuthStatus {
-    fn default() -> Self {
-        AuthStatus {
-            is_authenticated: false,
-            method: None,
-            last_login: None,
-            failed_attempts: 0,
-            locked_until: None,
-        }
-    }
-}
 
 /// Multi-factor authentication settings
 #[derive(Debug, Clone, Serialize, Deserialize)]

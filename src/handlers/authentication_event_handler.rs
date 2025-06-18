@@ -146,7 +146,7 @@ where
                     // Load person to verify they exist
                     let person = self.person_repository
                         .load(*person_id)
-                        .map_err(|e| DomainError::InternalError(e))?;
+                        .map_err(DomainError::InternalError)?;
 
                     // Check if person exists
                     if person.is_none() {
@@ -175,7 +175,7 @@ where
                     // Load organization to verify it exists
                     let org = self.organization_repository
                         .load(*org_id)
-                        .map_err(|e| DomainError::InternalError(e))?;
+                        .map_err(DomainError::InternalError)?;
 
                     // Check if organization exists
                     if org.is_none() {
@@ -218,7 +218,7 @@ where
                 // Load person
                 let person = self.person_repository
                     .load(*person_id)
-                    .map_err(|e| DomainError::InternalError(e))?;
+                    .map_err(DomainError::InternalError)?;
 
                 if let Some(person) = person {
                     // Perform verification based on available attributes
@@ -244,7 +244,7 @@ where
                 // Load organization
                 let org = self.organization_repository
                     .load(*org_id)
-                    .map_err(|e| DomainError::InternalError(e))?;
+                    .map_err(DomainError::InternalError)?;
 
                 if let Some(org) = org {
                     // Perform verification based on available attributes
@@ -291,12 +291,12 @@ where
         _person: &Person,
     ) -> DomainResult<(IdentityVerificationLevel, Vec<String>)> {
         let mut attributes_verified = Vec::new();
-        let verification_level;
+        
 
         // Check email verification
         // In real implementation, would check if email is verified
         attributes_verified.push("email".to_string());
-        verification_level = IdentityVerificationLevel::Email;
+        let verification_level = IdentityVerificationLevel::Email;
 
         // Check phone verification
         // In real implementation, would check if phone is verified
@@ -321,11 +321,11 @@ where
         _org: &Organization,
     ) -> DomainResult<(IdentityVerificationLevel, Vec<String>)> {
         let mut attributes_verified = Vec::new();
-        let verification_level;
+        
 
         // Check business registration
         attributes_verified.push("business_registration".to_string());
-        verification_level = IdentityVerificationLevel::Document;
+        let verification_level = IdentityVerificationLevel::Document;
 
         // Check authorized representatives
         attributes_verified.push("authorized_representatives".to_string());
