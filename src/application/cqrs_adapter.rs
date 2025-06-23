@@ -7,7 +7,7 @@
 
 use cim_domain::{
     Command, CommandEnvelope, CommandHandler, CommandAcknowledgment, CommandStatus,
-    Query, QueryEnvelope, QueryHandler, QueryAcknowledgment, QueryStatus,
+    Query, QueryEnvelope, QueryHandler, QueryResponse,
     EntityId,
 };
 use serde::{Deserialize, Serialize};
@@ -147,7 +147,7 @@ impl<H: IdentityQueryHandler> IdentityQueryHandlerAdapter<H> {
 }
 
 impl<H: IdentityQueryHandler> QueryHandler<IdentityQuery> for IdentityQueryHandlerAdapter<H> {
-    fn handle(&self, envelope: QueryEnvelope<IdentityQuery>) -> QueryAcknowledgment {
+    fn handle(&self, envelope: QueryEnvelope<IdentityQuery>) -> QueryResponse {
         let query_id = envelope.id;
         let correlation_id = envelope.correlation_id().clone();
         
@@ -213,17 +213,17 @@ impl<H: IdentityQueryHandler> QueryHandler<IdentityQuery> for IdentityQueryHandl
         });
         
         match result {
-            Ok(_) => QueryAcknowledgment {
-                query_id,
+            Ok(value) => QueryResponse {
+                query_id: envelope.identity.message_id,
                 correlation_id,
-                status: QueryStatus::Accepted,
-                reason: None,
+                result: value,
             },
-            Err(error) => QueryAcknowledgment {
-                query_id,
+            Err(error) => QueryResponse {
+                query_id: envelope.identity.message_id,
                 correlation_id,
-                status: QueryStatus::Rejected,
-                reason: Some(error.to_string()),
+                result: serde_json::json!({
+                    "error": error.to_string()
+                }),
             },
         }
     }
