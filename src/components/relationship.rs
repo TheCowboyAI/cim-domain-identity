@@ -1,25 +1,42 @@
-//! Identity relationship components
+//! Relationship components for the Identity domain
 
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
-use super::IdentityId;
+use crate::components::IdentityId;
 
-/// Relationship between two identities
+/// Unique identifier for a relationship
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct RelationshipId(pub uuid::Uuid);
+
+impl RelationshipId {
+    pub fn new() -> Self {
+        Self(uuid::Uuid::new_v4())
+    }
+}
+
+impl Default for RelationshipId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Component representing a relationship between identities
 #[derive(Component, Debug, Clone, Serialize, Deserialize)]
 pub struct IdentityRelationship {
-    pub relationship_id: uuid::Uuid,
+    pub relationship_id: RelationshipId,
     pub from_identity: IdentityId,
     pub to_identity: IdentityId,
     pub relationship_type: RelationshipType,
+    pub rules: RelationshipRules,
     pub established_at: chrono::DateTime<chrono::Utc>,
-    pub established_by: Option<IdentityId>,
+    pub established_by: IdentityId,
     pub metadata: serde_json::Value,
 }
 
-/// Type of relationship between identities
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+/// Types of relationships between identities
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum RelationshipType {
-    /// Person belongs to organization
+    /// Person is member of organization
     MemberOf {
         role: String,
         department: Option<String>,
@@ -28,74 +45,62 @@ pub enum RelationshipType {
     ManagerOf,
     /// Person reports to another person
     ReportsTo,
-    /// Identity is a parent of another (for hierarchies)
-    ParentOf,
-    /// Identity is a child of another
-    ChildOf,
-    /// Identity owns another identity
-    OwnerOf,
-    /// Identity is owned by another
-    OwnedBy,
+    /// Identity owns another identity (e.g., org owns subsidiary)
+    Owns {
+        ownership_percentage: Option<f32>,
+    },
+    /// Identity is partner with another
+    PartnerWith {
+        partnership_type: String,
+    },
     /// Identity delegates authority to another
     DelegatesTo {
         permissions: Vec<String>,
-        expires_at: Option<chrono::DateTime<chrono::Utc>>,
     },
     /// Identity acts on behalf of another
     ActsFor {
         scope: Vec<String>,
-        valid_until: Option<chrono::DateTime<chrono::Utc>>,
+    },
+    /// Identity is associated with another
+    AssociatedWith {
+        association_type: String,
     },
     /// Custom relationship type
     Custom {
         relationship_name: String,
-        bidirectional: bool,
+        attributes: serde_json::Value,
     },
 }
 
-/// Relationship validation rules
+/// Rules governing a relationship
 #[derive(Component, Debug, Clone, Serialize, Deserialize)]
 pub struct RelationshipRules {
-    pub allowed_relationships: Vec<AllowedRelationship>,
-    pub max_relationships: Option<usize>,
-    pub requires_approval: bool,
-    pub auto_expire_days: Option<u32>,
+    /// Whether this relationship can be delegated
+    pub can_delegate: bool,
+    /// Whether this relationship can be revoked
+    pub can_revoke: bool,
+    /// When this relationship expires
+    pub expires_at: Option<chrono::DateTime<chrono::Utc>>,
+    /// Maximum depth for transitive relationships
+    pub max_depth: Option<u8>,
 }
 
-/// Allowed relationship configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AllowedRelationship {
-    pub from_type: IdentityTypePattern,
-    pub to_type: IdentityTypePattern,
-    pub relationship_types: Vec<RelationshipType>,
+/// Component for caching relationship paths
+#[derive(Component, Debug, Clone)]
+pub struct RelationshipPath {
+    pub from: IdentityId,
+    pub to: IdentityId,
+    pub path: Vec<IdentityId>,
+    pub relationships: Vec<RelationshipId>,
+    pub total_distance: u32,
+    pub cached_at: chrono::DateTime<chrono::Utc>,
 }
 
-/// Pattern for matching identity types in rules
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub enum IdentityTypePattern {
-    Any,
-    Person,
-    Organization,
-    System,
-    External,
-}
-
-/// Relationship graph traversal component
-#[derive(Component, Debug, Clone, Serialize, Deserialize)]
+/// Component for relationship graph queries
+#[derive(Component, Debug, Clone)]
 pub struct RelationshipGraph {
     pub root_identity: IdentityId,
     pub max_depth: Option<u32>,
     pub relationship_filter: Option<Vec<RelationshipType>>,
     pub include_inactive: bool,
-}
-
-/// Cached relationship path for efficient traversal
-#[derive(Component, Debug, Clone, Serialize, Deserialize)]
-pub struct RelationshipPath {
-    pub from: IdentityId,
-    pub to: IdentityId,
-    pub path: Vec<IdentityId>,
-    pub relationships: Vec<uuid::Uuid>,
-    pub total_distance: u32,
-    pub cached_at: chrono::DateTime<chrono::Utc>,
 } 

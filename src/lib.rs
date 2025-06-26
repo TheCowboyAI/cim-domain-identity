@@ -12,10 +12,11 @@
 //!
 //! ## Architecture
 //!
-//! The domain uses an ECS (Entity Component System) architecture:
+//! The domain uses an ECS (Entity Component System) architecture with aggregate patterns:
 //! - Components: Data structures representing identity state
-//! - Systems: Functions that implement business logic
+//! - Systems: Functions that implement business logic and maintain aggregate invariants
 //! - Events: Commands and domain events for communication
+//! - Aggregates: Logical groupings of components that maintain consistency
 //!
 //! ## Domain Boundaries
 //!
@@ -26,20 +27,15 @@
 //! - Cryptographic operations → cim-security
 //! - Key management → cim-keys
 
+pub mod aggregate;
 pub mod components;
 pub mod systems;
 pub mod commands;
 pub mod events;
+pub mod queries;
+pub mod projections;
 
-// Legacy modules (to be migrated)
-pub mod domain;
-pub mod application;
-pub mod infrastructure;
-pub mod ports;
-pub mod conceptual;
-pub mod handlers;
-
-// Re-export key types from new architecture
+// Re-export key types
 pub use components::{
     IdentityId,
     IdentityEntity,
@@ -68,13 +64,16 @@ pub use systems::{
     establish_relationship_system,
     validate_relationship_system,
     traverse_relationships_system,
+    expire_relationships_system,
     // Workflow systems
     start_workflow_system,
     process_workflow_step_system,
     complete_workflow_system,
+    timeout_workflow_system,
     // Projection systems
     create_projection_system,
     sync_projections_system,
+    validate_projections_system,
     // Verification systems
     start_verification_system,
     process_verification_system,
@@ -83,31 +82,7 @@ pub use systems::{
 
 pub use commands::*;
 pub use events::*;
-
-// Legacy re-exports (for backward compatibility during migration)
-pub use domain::{
-    person::{Person, PersonId, PersonCommand, PersonEvent},
-    organization::{Organization, OrganizationId, OrganizationCommand, OrganizationEvent, OrganizationType},
-    Email, Name, Address, PhoneNumber, TrustLevel, Credentials, AuthStatus, MfaSettings, MfaMethod,
-};
-
-pub use ports::{
-    inbound::{IdentityCommandHandler, IdentityQueryHandler},
-    outbound::{PersonRepository, OrganizationRepository},
-};
-
-pub use conceptual::{
-    IdentityConceptProducer,
-    IdentityDimensions,
-};
-
-pub use handlers::{
-    AuthenticationEventHandler,
-    AuthenticationRequested,
-    IdentityVerificationRequested,
-    IdentityVerified,
-    IdentityVerificationLevel,
-};
+pub use aggregate::IdentityAggregate;
 
 /// Identity context error types
 #[derive(Debug, thiserror::Error)]
@@ -139,27 +114,11 @@ pub enum IdentityError {
     #[error("Cannot archive identity with active relationships")]
     ArchiveWithActiveRelationships,
 
-    // Legacy errors (for backward compatibility)
-    #[error("Person not found: {0}")]
-    PersonNotFound(PersonId),
-
-    #[error("Organization not found: {0}")]
-    OrganizationNotFound(OrganizationId),
-
-    #[error("Invalid email format: {0}")]
-    InvalidEmail(String),
-
-    #[error("Person already exists with email: {0}")]
-    PersonAlreadyExists(String),
-
-    #[error("Organization already exists with name: {0}")]
-    OrganizationAlreadyExists(String),
+    #[error("Aggregate invariant violated: {0}")]
+    InvariantViolation(String),
 
     #[error("Domain error: {0}")]
     DomainError(#[from] cim_domain::DomainError),
-
-    #[error("Event store error: {0}")]
-    EventStoreError(#[from] cim_domain::infrastructure::EventStoreError),
 }
 
 pub type IdentityResult<T> = Result<T, IdentityError>;

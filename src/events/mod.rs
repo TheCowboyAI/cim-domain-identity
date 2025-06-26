@@ -1,4 +1,4 @@
-//! Events for the Identity domain
+//! Domain events for the Identity context
 
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -6,6 +6,7 @@ use crate::components::{
     IdentityId, IdentityType, IdentityStatus, VerificationLevel,
     RelationshipType, IdentityWorkflowType, ProjectionType,
 };
+use cim_domain::WorkflowId;
 
 /// Event emitted when an identity is created
 #[derive(Event, Debug, Clone, Serialize, Deserialize)]
@@ -45,7 +46,7 @@ pub struct IdentityArchived {
     pub previous_status: IdentityStatus,
     pub archived_by: IdentityId,
     pub archived_at: chrono::DateTime<chrono::Utc>,
-    pub reason: String,
+    pub reason: Option<String>,
 }
 
 /// Event emitted when a relationship is established
@@ -93,31 +94,33 @@ pub struct VerificationCompleted {
 /// Event emitted when a workflow starts
 #[derive(Event, Debug, Clone, Serialize, Deserialize)]
 pub struct WorkflowStarted {
-    pub workflow_id: uuid::Uuid,
+    pub workflow_id: WorkflowId,
     pub identity_id: IdentityId,
     pub workflow_type: IdentityWorkflowType,
     pub started_by: IdentityId,
     pub started_at: chrono::DateTime<chrono::Utc>,
+    pub initial_step: String,
 }
 
 /// Event emitted when a workflow step completes
 #[derive(Event, Debug, Clone, Serialize, Deserialize)]
 pub struct WorkflowStepCompleted {
-    pub workflow_id: uuid::Uuid,
-    pub step_id: String,
-    pub next_step_id: Option<String>,
-    pub completed_by: IdentityId,
+    pub workflow_id: WorkflowId,
+    pub identity_id: IdentityId,
+    pub step_name: String,
+    pub next_step: String,
     pub completed_at: chrono::DateTime<chrono::Utc>,
+    pub new_status: crate::components::WorkflowStatus,
 }
 
 /// Event emitted when a workflow completes
 #[derive(Event, Debug, Clone, Serialize, Deserialize)]
 pub struct WorkflowCompleted {
-    pub workflow_id: uuid::Uuid,
+    pub workflow_id: WorkflowId,
     pub identity_id: IdentityId,
     pub workflow_type: IdentityWorkflowType,
-    pub final_status: crate::components::WorkflowStatus,
     pub completed_at: chrono::DateTime<chrono::Utc>,
+    pub outcome: WorkflowOutcome,
 }
 
 /// Event emitted when a projection is created
@@ -164,4 +167,12 @@ pub struct IdentityAuthenticationRequested {
     pub authentication_method: String,
     pub context: serde_json::Value,
     pub requested_at: chrono::DateTime<chrono::Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum WorkflowOutcome {
+    Approved,
+    Rejected,
+    Cancelled,
+    Completed,
 } 

@@ -54,4 +54,44 @@ impl Default for IdentityId {
     fn default() -> Self {
         Self::new()
     }
-} 
+}
+
+// Re-export commonly used types
+pub use identity::{
+    IdentityId,
+    IdentityEntity,
+    IdentityType,
+    IdentityStatus,
+    IdentityMetadata,
+    IdentityVerification,
+    VerificationLevel,
+    VerificationMethod,
+    IdentityClaim,
+    ClaimType,
+};
+
+pub use relationship::{
+    RelationshipId,
+    IdentityRelationship,
+    RelationshipType,
+    RelationshipRules,
+    RelationshipPath,
+    RelationshipGraph,
+};
+
+pub use workflow::{
+    IdentityWorkflow,
+    IdentityWorkflowType,
+    WorkflowState,
+    WorkflowStatus,
+    WorkflowStep,
+    WorkflowTransition,
+};
+
+pub use projection::{
+    IdentityProjection,
+    ProjectionType,
+    ProjectionContext,
+    CrossDomainReference,
+    IdentityView,
+}; 
