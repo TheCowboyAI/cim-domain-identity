@@ -2,6 +2,8 @@
 
 use bevy_ecs::prelude::*;
 use bevy_time::Time;
+use uuid::Uuid;
+use std::collections::{VecDeque, HashSet};
 use crate::{
     components::*,
     events::*,
@@ -19,127 +21,128 @@ pub fn establish_relationship_system(
     existing_relationships: Query<&IdentityRelationship>,
 ) {
     for event in events.read() {
-        // Find both identities
-        let from_identity = identities.iter()
-            .find(|e| e.identity_id == event.from_identity);
-        let to_identity = identities.iter()
-            .find(|e| e.identity_id == event.to_identity);
+        // Validate identities exist
+        let from_exists = identities.iter().any(|i| i.identity_id == event.from_identity);
+        let to_exists = identities.iter().any(|i| i.identity_id == event.to_identity);
 
-        if let (Some(from), Some(to)) = (from_identity, to_identity) {
-            // Validate through aggregate
-            match IdentityAggregate::validate_relationship(from, to, &event.relationship_type) {
-                Ok(_) => {
-                    // Check for existing relationship
-                    let exists = existing_relationships.iter()
-                        .any(|r| r.from_identity == event.from_identity &&
-                                r.to_identity == event.to_identity &&
-                                r.relationship_type == event.relationship_type);
+        if !from_exists || !to_exists {
+            eprintln!("Cannot establish relationship: one or both identities don't exist");
+            continue;
+        }
 
-                    if !exists {
-                        let relationship_id = RelationshipId::new();
+        // Check for duplicate relationships
+        let duplicate = existing_relationships.iter().any(|r| {
+            r.source_identity == event.from_identity &&
+            r.target_identity == event.to_identity &&
+            r.relationship_type == event.relationship_type
+        });
 
-                        // Create relationship entity
-                        commands.spawn(IdentityRelationship {
-                            relationship_id,
-                            from_identity: event.from_identity,
-                            to_identity: event.to_identity,
-                            relationship_type: event.relationship_type.clone(),
-                            rules: RelationshipRules {
-                                can_delegate: event.can_delegate,
-                                can_revoke: event.can_revoke,
-                                expires_at: event.expires_at,
-                                max_depth: event.max_depth,
-                            },
-                            established_at: chrono::Utc::now(),
-                            established_by: event.established_by,
-                            metadata: event.metadata.clone(),
-                        });
+        if duplicate {
+            eprintln!("Relationship already exists");
+            continue;
+        }
 
-                        // Emit established event
-                        established_events.send(RelationshipEstablished {
-                            relationship_id,
-                            from_identity: event.from_identity,
-                            to_identity: event.to_identity,
-                            relationship_type: event.relationship_type.clone(),
-                            established_by: event.established_by,
-                            established_at: chrono::Utc::now(),
-                        });
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Failed to establish relationship: {}", e);
-                }
+        // Validate through aggregate
+        match IdentityAggregate::validate_relationship(
+            event.from_identity,
+            event.to_identity,
+            &event.relationship_type,
+        ) {
+            Ok(_) => {
+                let relationship_id = Uuid::new_v4();
+
+                // Spawn the relationship entity
+                commands.spawn((
+                    IdentityRelationship {
+                        relationship_id: Uuid::new_v4(),
+                        source_identity: event.from_identity,
+                        target_identity: event.to_identity,
+                        relationship_type: event.relationship_type.clone(),
+                        rules: event.rules.clone(),
+                        established_at: chrono::Utc::now(),
+                        established_by: Some(event.established_by),
+                        expires_at: None,
+                    },
+                ));
+
+                // Emit established event
+                established_events.send(RelationshipEstablished {
+                    relationship_id,
+                    from_identity: event.from_identity,
+                    to_identity: event.to_identity,
+                    relationship_type: event.relationship_type.clone(),
+                    established_by: event.established_by,
+                    established_at: chrono::Utc::now(),
+                });
+            }
+            Err(e) => {
+                eprintln!("Failed to establish relationship: {}", e);
             }
         }
     }
 }
 
-/// System to validate existing relationships
-pub fn validate_relationship_system(
+/// System to validate relationships
+pub fn validate_relationships_system(
     mut commands: Commands,
+    mut events: EventReader<ValidateRelationshipCommand>,
     mut validated_events: EventWriter<RelationshipValidated>,
-    mut expired_events: EventWriter<RelationshipExpired>,
-    relationships: Query<(Entity, &IdentityRelationship)>,
+    relationships: Query<(&IdentityRelationship, Entity)>,
     identities: Query<&IdentityEntity>,
-    time: Res<Time>,
 ) {
-    let now = chrono::Utc::now();
+    for event in events.read() {
+        for (relationship, entity) in relationships.iter() {
+            if relationship.relationship_id == event.relationship_id {
+                // Check if both identities still exist and are active
+                let from_active = identities.iter()
+                    .find(|i| i.identity_id == relationship.source_identity)
+                    .map(|i| matches!(i.status, IdentityStatus::Active))
+                    .unwrap_or(false);
 
-    for (entity, relationship) in relationships.iter() {
-        let mut is_valid = true;
-        let mut reason = None;
+                let to_active = identities.iter()
+                    .find(|i| i.identity_id == relationship.target_identity)
+                    .map(|i| matches!(i.status, IdentityStatus::Active))
+                    .unwrap_or(false);
 
-        // Check expiration
-        if let Some(expires_at) = relationship.rules.expires_at {
-            if now >= expires_at {
-                is_valid = false;
-                reason = Some("Relationship expired".to_string());
+                let is_valid = from_active && to_active;
+
+                // Check expiration
+                let expired = relationship.expires_at
+                    .map(|exp| exp < chrono::Utc::now())
+                    .unwrap_or(false);
+
+                if !is_valid || expired {
+                    // Remove invalid relationship
+                    commands.entity(entity).despawn();
+
+                    validated_events.write(RelationshipValidated {
+                        relationship_id: event.relationship_id,
+                        is_valid: false,
+                        reason: if !is_valid {
+                            "One or both identities are not active".to_string()
+                        } else {
+                            "Relationship has expired".to_string()
+                        },
+                        validated_at: chrono::Utc::now(),
+                    });
+                } else {
+                    validated_events.write(RelationshipValidated {
+                        relationship_id: event.relationship_id,
+                        is_valid: true,
+                        reason: "Relationship is valid".to_string(),
+                        validated_at: chrono::Utc::now(),
+                    });
+                }
             }
-        }
-
-        // Check if both identities still exist and are active
-        let from_active = identities.iter()
-            .find(|e| e.identity_id == relationship.from_identity)
-            .map(|e| matches!(e.status, IdentityStatus::Active))
-            .unwrap_or(false);
-
-        let to_active = identities.iter()
-            .find(|e| e.identity_id == relationship.to_identity)
-            .map(|e| matches!(e.status, IdentityStatus::Active))
-            .unwrap_or(false);
-
-        if !from_active || !to_active {
-            is_valid = false;
-            reason = Some("One or both identities are no longer active".to_string());
-        }
-
-        if is_valid {
-            // Emit validation event
-            validated_events.send(RelationshipValidated {
-                relationship_id: relationship.relationship_id,
-                validated_at: now,
-            });
-        } else {
-            // Remove invalid relationship
-            commands.entity(entity).despawn();
-
-            // Emit expired event
-            expired_events.send(RelationshipExpired {
-                relationship_id: relationship.relationship_id,
-                from_identity: relationship.from_identity,
-                to_identity: relationship.to_identity,
-                relationship_type: relationship.relationship_type.clone(),
-                expired_at: now,
-                reason,
-            });
         }
     }
 }
 
-/// System to traverse relationship graph
+/// System to traverse relationship graphs
 pub fn traverse_relationships_system(
+    mut commands: Commands,
     mut events: EventReader<TraverseRelationshipsCommand>,
-    mut result_events: EventWriter<RelationshipTraversalResult>,
+    mut traversed_events: EventWriter<RelationshipsTraversed>,
     relationships: Query<&IdentityRelationship>,
 ) {
     for event in events.read() {
@@ -147,86 +150,86 @@ pub fn traverse_relationships_system(
         let mut paths = Vec::new();
         let mut queue = std::collections::VecDeque::new();
 
-        // Start traversal
-        queue.push_back((event.from_identity, vec![event.from_identity], 0));
+        // Start traversal from the root identity
+        queue.push_back((event.from_identity, vec![event.from_identity], vec![], 0));
+        visited.insert(event.from_identity);
 
-        while let Some((current, path, depth)) = queue.pop_front() {
+        while let Some((current, path, rels, depth)) = queue.pop_front() {
+            // Check depth limit
             if let Some(max_depth) = event.max_depth {
                 if depth >= max_depth {
                     continue;
                 }
             }
 
-            if visited.contains(&current) {
-                continue;
-            }
-            visited.insert(current);
-
             // Find relationships from current identity
             for relationship in relationships.iter() {
-                if relationship.from_identity == current {
+                if relationship.source_identity == current {
                     // Check if relationship type matches filter
-                    if let Some(ref types) = event.relationship_types {
-                        if !types.contains(&relationship.relationship_type) {
+                    if let Some(filter) = &event.relationship_filter {
+                        let type_matches = filter.iter().any(|t| {
+                            std::mem::discriminant(t) == 
+                            std::mem::discriminant(&relationship.relationship_type)
+                        });
+                        if !type_matches {
                             continue;
                         }
                     }
 
-                    // Check max depth for this relationship
-                    if let Some(max) = relationship.rules.max_depth {
-                        if depth >= max as u32 {
-                            continue;
-                        }
-                    }
-
-                    let next = relationship.to_identity;
+                    let next = relationship.target_identity;
+                    
+                    // Check if we've visited this identity
                     if !visited.contains(&next) {
+                        visited.insert(next);
+                        
                         let mut new_path = path.clone();
                         new_path.push(next);
+                        
+                        let mut new_rels = rels.clone();
+                        new_rels.push(relationship.relationship_id);
 
-                        // Check if we've reached the target
+                        // If this is the target, save the path
                         if Some(next) == event.to_identity {
-                            paths.push(new_path.clone());
+                            paths.push((new_path.clone(), new_rels.clone()));
                         }
 
-                        queue.push_back((next, new_path, depth + 1));
+                        // Continue traversal
+                        queue.push_back((next, new_path, new_rels, depth + 1));
                     }
                 }
             }
         }
 
-        // Emit result event
-        result_events.send(RelationshipTraversalResult {
+        // Emit traversal result
+        traversed_events.write(RelationshipsTraversed {
             from_identity: event.from_identity,
             to_identity: event.to_identity,
-            paths_found: paths,
-            total_visited: visited.len(),
+            paths,
+            total_identities_visited: visited.len(),
+            traversed_at: chrono::Utc::now(),
         });
     }
 }
 
-/// System to expire relationships based on rules
+/// System to expire relationships
 pub fn expire_relationships_system(
     mut commands: Commands,
     mut expired_events: EventWriter<RelationshipExpired>,
-    relationships: Query<(Entity, &IdentityRelationship)>,
+    relationships: Query<(&IdentityRelationship, Entity)>,
 ) {
     let now = chrono::Utc::now();
 
-    for (entity, relationship) in relationships.iter() {
-        if let Some(expires_at) = relationship.rules.expires_at {
-            if now >= expires_at {
-                // Remove expired relationship
+    for (relationship, entity) in relationships.iter() {
+        if let Some(expires_at) = relationship.expires_at {
+            if expires_at < now {
                 commands.entity(entity).despawn();
-
-                // Emit expired event
-                expired_events.send(RelationshipExpired {
+                
+                expired_events.write(RelationshipExpired {
                     relationship_id: relationship.relationship_id,
-                    from_identity: relationship.from_identity,
-                    to_identity: relationship.to_identity,
+                    from_identity: relationship.source_identity,
+                    to_identity: relationship.target_identity,
                     relationship_type: relationship.relationship_type.clone(),
-                    expired_at: now,
-                    reason: Some("Relationship reached expiration date".to_string()),
+                    expired_at: expires_at,
                 });
             }
         }

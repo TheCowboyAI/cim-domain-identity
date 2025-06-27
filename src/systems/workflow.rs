@@ -28,7 +28,7 @@ pub fn start_workflow_system(
         let existing_workflow = workflows.iter()
             .any(|w| w.identity_id == event.identity_id &&
                     w.workflow_type == event.workflow_type &&
-                    matches!(w.current_state.status, 
+                    matches!(w.status, 
                             WorkflowStatus::InProgress | 
                             WorkflowStatus::WaitingForInput |
                             WorkflowStatus::WaitingForApproval));
@@ -40,32 +40,31 @@ pub fn start_workflow_system(
 
         let workflow_id = uuid::Uuid::new_v4();
 
+        // Create new workflow
+        let workflow = IdentityWorkflow {
+            workflow_id,
+            identity_id: event.identity_id,
+            workflow_type: event.workflow_type.clone(),
+            status: WorkflowStatus::NotStarted,
+            current_step: None,
+            steps: Vec::new(), // Workflow steps should be initialized based on workflow type
+            started_at: Some(chrono::Utc::now()),
+            completed_at: None,
+        };
+
         // Spawn workflow entity
         commands.spawn((
-            IdentityWorkflow {
-                workflow_id,
-                identity_id: event.identity_id,
-                workflow_type: event.workflow_type.clone(),
-                current_state: WorkflowState {
-                    step_id: "start".to_string(),
-                    status: WorkflowStatus::InProgress,
-                    entered_at: chrono::Utc::now(),
-                    data: event.context.clone(),
-                },
-                started_at: chrono::Utc::now(),
-                started_by: event.started_by,
-                deadline: None,
-                context: event.context.clone(),
-            },
+            workflow,
         ));
 
         // Emit started event
-        started_events.send(WorkflowStarted {
+        started_events.write(WorkflowStarted {
             workflow_id,
             identity_id: event.identity_id,
             workflow_type: event.workflow_type.clone(),
             started_by: event.started_by,
             started_at: chrono::Utc::now(),
+            context: event.context.clone(),
         });
     }
 }
@@ -73,39 +72,44 @@ pub fn start_workflow_system(
 /// System to process workflow steps
 pub fn process_workflow_step_system(
     mut commands: Commands,
-    mut events: EventReader<CompleteWorkflowStepCommand>,
-    mut step_events: EventWriter<WorkflowStepCompleted>,
-    mut workflows: Query<&mut IdentityWorkflow>,
-    transitions: Query<&WorkflowTransition>,
+    mut events: EventReader<CompleteWorkflowCommand>,
+    mut workflows: Query<(Entity, &mut IdentityWorkflow)>,
+    mut writer: EventWriter<WorkflowStepCompleted>,
 ) {
     for event in events.read() {
-        for mut workflow in workflows.iter_mut() {
-            if workflow.workflow_id == event.workflow_id &&
-               workflow.current_state.step_id == event.step_id {
-                
-                // Find applicable transition
-                let next_step = transitions.iter()
-                    .find(|t| t.from_step == event.step_id)
-                    .map(|t| t.to_step.clone());
+        for (entity, mut workflow) in workflows.iter_mut() {
+            if workflow.workflow_id == *event.workflow_id.as_uuid() {
+                // Find and update the current step
+                let current_step_id = workflow.current_step.clone();
+                if let Some(ref step_id) = current_step_id {
+                    if let Some(step) = workflow.steps.iter_mut()
+                        .find(|s| &s.step_id == step_id) {
+                        
+                        // Mark step as completed
+                        step.status = StepStatus::Completed;
+                        step.completed_at = Some(chrono::Utc::now());
 
-                // Update workflow state
-                if let Some(next_step_id) = &next_step {
-                    workflow.current_state = WorkflowState {
-                        step_id: next_step_id.clone(),
-                        status: WorkflowStatus::InProgress,
-                        entered_at: chrono::Utc::now(),
-                        data: event.result.clone(),
-                    };
+                        // Find next step
+                        let next_step = workflow.steps.iter()
+                            .find(|s| s.status == StepStatus::Pending)
+                            .map(|s| s.step_id.clone());
+
+                        // Update workflow state
+                        if let Some(next_step_id) = &next_step {
+                            workflow.status = WorkflowStatus::InProgress;
+                            workflow.current_step = Some(next_step_id.clone());
+                        }
+
+                        // Emit step completed event
+                        writer.send(WorkflowStepCompleted {
+                            workflow_id: workflow.workflow_id,
+                            identity_id: workflow.identity_id,
+                            workflow_type: workflow.workflow_type.clone(),
+                            step_id: step_id.clone(),
+                            completed_at: chrono::Utc::now(),
+                        });
+                    }
                 }
-
-                // Emit step completed event
-                step_events.send(WorkflowStepCompleted {
-                    workflow_id: event.workflow_id,
-                    step_id: event.step_id.clone(),
-                    next_step_id: next_step,
-                    completed_by: event.completed_by,
-                    completed_at: chrono::Utc::now(),
-                });
             }
         }
     }
@@ -116,67 +120,60 @@ pub fn complete_workflow_system(
     mut commands: Commands,
     mut completed_events: EventWriter<WorkflowCompleted>,
     mut workflows: Query<(Entity, &mut IdentityWorkflow)>,
+    mut events: EventReader<CompleteWorkflowCommand>,
 ) {
-    for (entity, mut workflow) in workflows.iter_mut() {
-        // Check if workflow is in a terminal state
-        match workflow.current_state.status {
-            WorkflowStatus::Completed | WorkflowStatus::Failed | WorkflowStatus::Cancelled => {
+    for event in events.read() {
+        for (entity, mut workflow) in workflows.iter_mut() {
+            if workflow.workflow_id == *event.workflow_id.as_uuid() {
+                // Check if workflow can be completed
+                if matches!(workflow.status, 
+                    WorkflowStatus::Completed | WorkflowStatus::Failed(_) | WorkflowStatus::Cancelled) {
+                    continue;
+                }
+
                 // Emit completed event
-                completed_events.send(WorkflowCompleted {
+                completed_events.write(WorkflowCompleted {
                     workflow_id: workflow.workflow_id,
                     identity_id: workflow.identity_id,
                     workflow_type: workflow.workflow_type.clone(),
-                    final_status: workflow.current_state.status,
+                    final_status: workflow.status.clone(),
                     completed_at: chrono::Utc::now(),
-                });
-
-                // Create workflow history
-                let duration = chrono::Utc::now() - workflow.started_at;
-                commands.spawn(WorkflowHistory {
-                    workflow_id: workflow.workflow_id,
-                    step_transitions: vec![], // Would be populated from events
-                    total_duration: Some(duration),
-                    completion_data: Some(workflow.current_state.data.clone()),
                 });
 
                 // Remove active workflow
                 commands.entity(entity).despawn();
             }
-            _ => {}
         }
     }
 }
 
 /// System to handle workflow timeouts
-pub fn timeout_workflow_system(
+pub fn timeout_workflows_system(
     mut workflows: Query<&mut IdentityWorkflow>,
-    steps: Query<&WorkflowStep>,
-    time: Res<bevy_time::Time>,
+    _time: Res<bevy_time::Time>,
 ) {
-    let now = chrono::Utc::now();
+    let current_time = chrono::Utc::now();
 
     for mut workflow in workflows.iter_mut() {
-        // Check if workflow has deadline
-        if let Some(deadline) = workflow.deadline {
-            if now > deadline {
-                workflow.current_state.status = WorkflowStatus::Failed;
-                continue;
-            }
+        // Skip if not in progress
+        if !matches!(workflow.status, WorkflowStatus::InProgress) {
+            continue;
         }
 
-        // Check step timeout
-        if let Some(step) = steps.iter()
-            .find(|s| s.step_id == workflow.current_state.step_id) {
-            
-            if let Some(timeout) = step.timeout {
-                let elapsed = now - workflow.current_state.entered_at;
-                if elapsed > timeout {
-                    // Timeout occurred
-                    match workflow.current_state.status {
-                        WorkflowStatus::WaitingForInput | WorkflowStatus::WaitingForApproval => {
-                            workflow.current_state.status = WorkflowStatus::Failed;
+        // Check current step timeout
+        let current_step_id = workflow.current_step.clone();
+        if let Some(ref step_id) = current_step_id {
+            if let Some(step) = workflow.steps.iter_mut()
+                .find(|s| &s.step_id == step_id && s.status == StepStatus::Active) {
+                
+                if let Some(timeout_seconds) = step.timeout_seconds {
+                    if let Some(started_at) = step.started_at {
+                        let elapsed = current_time - started_at;
+                        if elapsed.num_seconds() > timeout_seconds as i64 {
+                            // Timeout occurred
+                            step.status = StepStatus::Failed;
+                            workflow.status = WorkflowStatus::Failed("Step timeout".to_string());
                         }
-                        _ => {}
                     }
                 }
             }

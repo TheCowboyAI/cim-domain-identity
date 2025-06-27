@@ -1,6 +1,7 @@
 //! Identity lifecycle systems
 
 use bevy_ecs::prelude::*;
+use uuid::Uuid;
 use crate::{
     components::*,
     events::*,
@@ -23,7 +24,7 @@ pub fn create_identity_system(
         // Validate through aggregate
         match IdentityAggregate::validate_create(event, &existing) {
             Ok(_) => {
-                let identity_id = IdentityId::new();
+                let identity_id = Uuid::new_v4();
                 
                 // Spawn the identity entity with components
                 let entity = commands.spawn((
@@ -56,11 +57,12 @@ pub fn create_identity_system(
                 }
 
                 // Emit created event
-                created_events.send(IdentityCreated {
+                created_events.write(IdentityCreated {
                     identity_id,
                     identity_type: event.identity_type,
-                    created_by: event.created_by,
+                    created_by: Some(event.created_by),
                     created_at: chrono::Utc::now(),
+                    external_reference: event.external_reference.clone(),
                 });
             }
             Err(e) => {
@@ -94,7 +96,7 @@ pub fn update_identity_system(
                             metadata.version += 1;
 
                             // Emit updated event
-                            updated_events.send(IdentityUpdated {
+                            updated_events.write(IdentityUpdated {
                                 identity_id: event.identity_id,
                                 old_status,
                                 new_status,
@@ -158,7 +160,7 @@ pub fn merge_identities_system(
 
                     // Count migrated relationships and workflows
                     let migrated_relationships = relationships.iter()
-                        .filter(|r| r.from_identity == event.source_identity)
+                        .filter(|r| r.source_identity == event.source_identity)
                         .count();
 
                     let migrated_workflows = workflows.iter()
@@ -166,7 +168,7 @@ pub fn merge_identities_system(
                         .count();
 
                     // Emit merged event
-                    merged_events.send(IdentitiesMerged {
+                    merged_events.write(IdentitiesMerged {
                         source_identity: event.source_identity,
                         target_identity: event.target_identity,
                         merged_by: event.merged_by,
@@ -198,8 +200,8 @@ pub fn archive_identity_system(
             if identity.identity_id == event.identity_id {
                 // Count active relationships
                 let active_relationships = relationships.iter()
-                    .filter(|r| r.from_identity == event.identity_id || 
-                               r.to_identity == event.identity_id)
+                    .filter(|r| r.source_identity == event.identity_id || 
+                               r.target_identity == event.identity_id)
                     .count();
 
                 // Validate through aggregate
@@ -214,7 +216,7 @@ pub fn archive_identity_system(
                         metadata.version += 1;
 
                         // Emit archived event
-                        archived_events.send(IdentityArchived {
+                        archived_events.write(IdentityArchived {
                             identity_id: event.identity_id,
                             previous_status: old_status,
                             archived_by: event.archived_by,

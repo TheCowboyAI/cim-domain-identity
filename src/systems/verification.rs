@@ -21,31 +21,34 @@ pub fn start_verification_system(
 
         if let Some((identity, current_verification)) = identity_data {
             // Check if verification is already at max level
-            if current_verification.verification_level == VerificationLevel::FullyVerified {
+            if current_verification.verification_level == VerificationLevel::Full {
                 continue;
             }
 
             // Start verification workflow based on method
             match &event.verification_method {
-                VerificationMethod::EmailLink | VerificationMethod::EmailCode => {
+                VerificationMethod::Email => {
                     // Would trigger email verification workflow
                 }
-                VerificationMethod::SmsCode | VerificationMethod::PhoneCall => {
+                VerificationMethod::Phone => {
                     // Would trigger phone verification workflow
                 }
-                VerificationMethod::DocumentUpload => {
+                VerificationMethod::Document => {
                     // Would trigger document verification workflow
                 }
-                VerificationMethod::VideoCall | VerificationMethod::InPerson => {
+                VerificationMethod::Biometric => {
+                    // Would trigger biometric verification workflow
+                }
+                VerificationMethod::InPerson => {
                     // Would trigger manual verification workflow
                 }
-                VerificationMethod::ThirdPartyService { service } => {
+                VerificationMethod::ThirdParty { provider } => {
                     // Would integrate with external service
                 }
             }
 
             // Emit started event
-            started_events.send(VerificationStarted {
+            started_events.write(VerificationStarted {
                 identity_id: event.identity_id,
                 verification_method: event.verification_method.clone(),
                 initiated_by: event.initiated_by,
@@ -71,6 +74,7 @@ pub fn process_verification_system(
                     verification.verification_level = event.verification_level;
                     verification.verified_at = Some(chrono::Utc::now());
                     verification.verified_by = Some(event.verified_by);
+                    verification.verification_method = Some(event.verification_method.clone());
 
                     // Update identity status if pending
                     if matches!(identity.status, IdentityStatus::Pending) {
@@ -78,7 +82,7 @@ pub fn process_verification_system(
                     }
 
                     // Emit completed event
-                    completed_events.send(VerificationCompleted {
+                    completed_events.write(VerificationCompleted {
                         identity_id: event.identity_id,
                         verification_successful: true,
                         new_verification_level: event.verification_level,
@@ -87,7 +91,7 @@ pub fn process_verification_system(
                     });
                 } else {
                     // Verification failed
-                    completed_events.send(VerificationCompleted {
+                    completed_events.write(VerificationCompleted {
                         identity_id: event.identity_id,
                         verification_successful: false,
                         new_verification_level: verification.verification_level,
@@ -102,14 +106,14 @@ pub fn process_verification_system(
 
 /// System to complete verification workflows
 pub fn complete_verification_system(
-    mut commands: Commands,
+    mut _commands: Commands,
     verifications: Query<(&IdentityEntity, &IdentityVerification, &IdentityWorkflow)>,
     mut workflow_events: EventWriter<WorkflowCompleted>,
 ) {
-    for (identity, verification, workflow) in verifications.iter() {
+    for (identity, _verification, workflow) in verifications.iter() {
         // Check if verification workflow is complete
-        if matches!(workflow.workflow_type, IdentityWorkflowType::Verification) {
-            match workflow.current_state.status {
+        if matches!(workflow.workflow_type, WorkflowType::Verification) {
+            match &workflow.status {
                 WorkflowStatus::Completed => {
                     // Verification workflow completed successfully
                     workflow_events.send(WorkflowCompleted {
@@ -120,13 +124,13 @@ pub fn complete_verification_system(
                         completed_at: chrono::Utc::now(),
                     });
                 }
-                WorkflowStatus::Failed | WorkflowStatus::Cancelled => {
+                WorkflowStatus::Failed(_) | WorkflowStatus::Cancelled => {
                     // Verification workflow failed
                     workflow_events.send(WorkflowCompleted {
                         workflow_id: workflow.workflow_id,
                         identity_id: identity.identity_id,
                         workflow_type: workflow.workflow_type.clone(),
-                        final_status: workflow.current_state.status,
+                        final_status: workflow.status.clone(),
                         completed_at: chrono::Utc::now(),
                     });
                 }
@@ -146,29 +150,23 @@ pub fn update_verification_claims_system(
         // Update claim verification status based on verification level
         for mut claim in claims.iter_mut() {
             match verification.verification_level {
-                VerificationLevel::EmailVerified => {
+                VerificationLevel::Basic => {
                     if matches!(claim.claim_type, ClaimType::Email) {
                         claim.verified = true;
                     }
                 }
-                VerificationLevel::PhoneVerified => {
+                VerificationLevel::Enhanced => {
                     if matches!(claim.claim_type, ClaimType::Email | ClaimType::Phone) {
                         claim.verified = true;
                     }
                 }
-                VerificationLevel::DocumentVerified => {
-                    if matches!(
-                        claim.claim_type,
-                        ClaimType::Email | ClaimType::Phone | ClaimType::Name | ClaimType::DateOfBirth
-                    ) {
-                        claim.verified = true;
-                    }
-                }
-                VerificationLevel::InPersonVerified | VerificationLevel::FullyVerified => {
+                VerificationLevel::Full => {
                     // All claims verified
                     claim.verified = true;
                 }
-                _ => {}
+                VerificationLevel::Unverified => {
+                    // No claims verified
+                }
             }
         }
     }
