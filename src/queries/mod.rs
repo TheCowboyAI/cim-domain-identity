@@ -157,8 +157,11 @@ pub fn get_aggregate_state(
 ) -> Option<AggregateState> {
     // Find identity
     let mut identity_query = world.query::<(&IdentityEntity, &IdentityVerification)>();
-    let (identity, verification) = identity_query.iter(world)
-        .find(|(e, _)| e.identity_id == identity_id)?;
+    let identity_data = identity_query.iter(world)
+        .find(|(e, _)| e.identity_id == identity_id)
+        .map(|(e, v)| (e.clone(), v.clone()))?;
+    
+    let (identity, verification) = identity_data;
 
     // Find relationships
     let mut relationship_query = world.query::<&IdentityRelationship>();
@@ -175,10 +178,10 @@ pub fn get_aggregate_state(
         .collect();
 
     Some(IdentityAggregate::calculate_state(
-        identity,
+        &identity,
         &relationships,
         &workflows,
-        verification,
+        &verification,
     ))
 }
 
