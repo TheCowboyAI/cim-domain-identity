@@ -312,7 +312,7 @@ pub struct RelationshipGraphResult {
 
 /// System to find identity by ID
 pub fn find_identity_by_id(
-    world: &World,
+    world: &mut World,
     query: &FindIdentityByIdQuery,
 ) -> Option<IdentityView> {
     world.query_filtered::<(&IdentityEntity, &IdentityMetadata, &IdentityVerification), ()>()
@@ -330,7 +330,7 @@ pub fn find_identity_by_id(
 
 /// System to find identities by type
 pub fn find_identities_by_type(
-    world: &World,
+    world: &mut World,
     query: &FindIdentitiesByTypeQuery,
 ) -> Vec<IdentityView> {
     world.query_filtered::<(&IdentityEntity, &IdentityMetadata, &IdentityVerification), ()>()
@@ -349,7 +349,7 @@ pub fn find_identities_by_type(
 
 /// System to find relationships for an identity
 pub fn find_relationships_by_identity(
-    world: &World,
+    world: &mut World,
     query: &FindRelationshipsByIdentityQuery,
 ) -> Vec<RelationshipView> {
     world.query_filtered::<&IdentityRelationship, ()>()
@@ -379,7 +379,7 @@ pub struct RelationshipView {
 }
 
 pub fn find_by_status(
-    world: &World,
+    world: &mut World,
     status: IdentityStatus,
 ) -> Vec<IdentityView> {
     world.query_filtered::<(&IdentityEntity, &IdentityVerification, &IdentityMetadata), ()>()
@@ -397,7 +397,7 @@ pub fn find_by_status(
 }
 
 pub fn find_by_verification_level(
-    world: &World,
+    world: &mut World,
     min_level: VerificationLevel,
 ) -> Vec<IdentityView> {
     world.query_filtered::<(&IdentityEntity, &IdentityVerification, &IdentityMetadata), ()>()

@@ -101,7 +101,7 @@ pub fn process_workflow_step_system(
                         }
 
                         // Emit step completed event
-                        writer.send(WorkflowStepCompleted {
+                        writer.write(WorkflowStepCompleted {
                             workflow_id: workflow.workflow_id,
                             identity_id: workflow.identity_id,
                             workflow_type: workflow.workflow_type.clone(),

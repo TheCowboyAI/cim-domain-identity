@@ -66,7 +66,7 @@ pub fn establish_relationship_system(
                 ));
 
                 // Emit established event
-                established_events.send(RelationshipEstablished {
+                established_events.write(RelationshipEstablished {
                     relationship_id,
                     from_identity: event.from_identity,
                     to_identity: event.to_identity,

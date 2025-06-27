@@ -33,7 +33,7 @@ pub fn create_projection_system(
         });
 
         // Emit created event
-        created_events.send(ProjectionCreated {
+        created_events.write(ProjectionCreated {
             projection_id: Uuid::new_v4(),
             identity_id: event.identity_id,
             projection_type: event.projection_type.clone(),
@@ -68,7 +68,7 @@ pub fn sync_projections_system(
             match external_ref.domain.as_str() {
                 "person" => {
                     if let Ok(target_id) = Uuid::parse_str(&external_ref.entity_id) {
-                        writer.send(IdentityLinkedToPerson {
+                        writer.write(IdentityLinkedToPerson {
                             identity_id: event.identity_id,
                             person_id: target_id,
                             linked_at: chrono::Utc::now(),
@@ -77,7 +77,7 @@ pub fn sync_projections_system(
                 }
                 "organization" => {
                     if let Ok(target_id) = Uuid::parse_str(&external_ref.entity_id) {
-                        org_writer.send(IdentityLinkedToOrganization {
+                        org_writer.write(IdentityLinkedToOrganization {
                             identity_id: event.identity_id,
                             organization_id: target_id,
                             role: None,

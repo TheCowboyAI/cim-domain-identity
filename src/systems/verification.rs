@@ -116,7 +116,7 @@ pub fn complete_verification_system(
             match &workflow.status {
                 WorkflowStatus::Completed => {
                     // Verification workflow completed successfully
-                    workflow_events.send(WorkflowCompleted {
+                    workflow_events.write(WorkflowCompleted {
                         workflow_id: workflow.workflow_id,
                         identity_id: identity.identity_id,
                         workflow_type: workflow.workflow_type.clone(),
@@ -126,7 +126,7 @@ pub fn complete_verification_system(
                 }
                 WorkflowStatus::Failed(_) | WorkflowStatus::Cancelled => {
                     // Verification workflow failed
-                    workflow_events.send(WorkflowCompleted {
+                    workflow_events.write(WorkflowCompleted {
                         workflow_id: workflow.workflow_id,
                         identity_id: identity.identity_id,
                         workflow_type: workflow.workflow_type.clone(),
