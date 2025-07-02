@@ -21,8 +21,8 @@ pub struct IdentityAggregate;
 impl IdentityAggregate {
     /// Validate identity creation
     pub fn validate_create(
-        command: &CreateIdentityCommand,
-        existing_identities: &[IdentityEntity],
+        _command: &CreateIdentityCommand,
+        _existing_identities: &[IdentityEntity],
     ) -> IdentityResult<()> {
         // Business rule: Cannot create duplicate identities with same claims
         // This would check for existing identities with same email/phone
@@ -34,7 +34,7 @@ impl IdentityAggregate {
     /// Validate identity update
     pub fn validate_update(
         identity: &IdentityEntity,
-        command: &UpdateIdentityCommand,
+        _command: &UpdateIdentityCommand,
     ) -> IdentityResult<()> {
         // Business rule: Cannot update archived identities
         if matches!(identity.status, IdentityStatus::Archived) {

@@ -46,7 +46,7 @@ pub fn update_relationship_graph(
 ) {
     for event in events.read() {
         // Update any relationship graphs that include these identities
-        for mut graph in graphs.iter_mut() {
+        for graph in graphs.iter() {
             if graph.identity_id == event.from_identity ||
                graph.identity_id == event.to_identity {
                 // In a real implementation, would update the graph structure

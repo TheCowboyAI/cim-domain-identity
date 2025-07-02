@@ -142,11 +142,11 @@ pub fn complete_verification_system(
 
 /// System to handle verification claim updates
 pub fn update_verification_claims_system(
-    mut commands: Commands,
+    mut _commands: Commands,
     verifications: Query<(&IdentityEntity, &IdentityVerification)>,
     mut claims: Query<&mut IdentityClaim>,
 ) {
-    for (identity, verification) in verifications.iter() {
+    for (_identity, verification) in verifications.iter() {
         // Update claim verification status based on verification level
         for mut claim in claims.iter_mut() {
             match verification.verification_level {

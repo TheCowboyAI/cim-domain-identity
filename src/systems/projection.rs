@@ -50,7 +50,7 @@ pub fn sync_projections_system(
     mut events: EventReader<IdentityCreated>,
     mut writer: EventWriter<IdentityLinkedToPerson>,
     mut org_writer: EventWriter<IdentityLinkedToOrganization>,
-    mut projections: Query<&mut IdentityProjection>,
+    mut _projections: Query<&mut IdentityProjection>,
 ) {
     for event in events.read() {
         // Create projection for the new identity
