@@ -150,9 +150,16 @@ pub fn complete_workflow_system(
 /// System to handle workflow timeouts
 pub fn timeout_workflows_system(
     mut workflows: Query<&mut IdentityWorkflow>,
-    _time: Res<bevy_time::Time>,
+    time: Res<bevy_time::Time>,
 ) {
+    // Use the time resource to get elapsed time since startup
+    // In production, you might want to track actual wall-clock time
     let current_time = chrono::Utc::now();
+    
+    // Log system execution for debugging
+    if time.delta_secs() > 0.0 {
+        trace!("Checking workflow timeouts, delta: {:.2}s", time.delta_secs());
+    }
 
     for mut workflow in workflows.iter_mut() {
         // Skip if not in progress
