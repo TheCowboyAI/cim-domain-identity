@@ -1,11 +1,7 @@
 //! Projections and read models for the Identity domain
 
+use crate::{components::*, events::*, queries::IdentityView};
 use bevy_ecs::prelude::*;
-use crate::{
-    components::*,
-    events::*,
-    queries::IdentityView,
-};
 
 /// Identity projection system marker
 pub struct IdentityProjectionSystem;
@@ -26,16 +22,14 @@ pub fn update_identity_projections(
 ) {
     for event in events.read() {
         // Create projection components for the new identity
-        commands.spawn((
-            IdentityProjection {
-                identity_id: event.identity_id,
-                projection_type: ProjectionType::Primary,
-                target_domain: "identity".to_string(),
-                sync_status: ProjectionSyncStatus::Synced,
-                last_sync: event.created_at,
-                last_synced: event.created_at,
-            },
-        ));
+        commands.spawn((IdentityProjection {
+            identity_id: event.identity_id,
+            projection_type: ProjectionType::Primary,
+            target_domain: "identity".to_string(),
+            sync_status: ProjectionSyncStatus::Synced,
+            last_sync: event.created_at,
+            last_synced: event.created_at,
+        },));
     }
 }
 
@@ -47,8 +41,7 @@ pub fn update_relationship_graph(
     for event in events.read() {
         // Update any relationship graphs that include these identities
         for graph in graphs.iter() {
-            if graph.identity_id == event.from_identity ||
-               graph.identity_id == event.to_identity {
+            if graph.identity_id == event.from_identity || graph.identity_id == event.to_identity {
                 // In a real implementation, would update the graph structure
             }
         }
@@ -120,12 +113,11 @@ pub fn update_workflow_status_projection(
                 // Update the current step's status
                 let current_step_id = workflow.current_step.clone();
                 if let Some(ref step_id) = current_step_id {
-                    if let Some(step) = workflow.steps.iter_mut()
-                        .find(|s| &s.step_id == step_id) {
+                    if let Some(step) = workflow.steps.iter_mut().find(|s| &s.step_id == step_id) {
                         step.status = StepStatus::Failed;
                     }
                 }
             }
         }
     }
-} 
+}

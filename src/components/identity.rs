@@ -116,4 +116,4 @@ pub struct ExternalIdentity {
     pub external_id: String,
     pub profile_data: serde_json::Value,
     pub linked_at: chrono::DateTime<chrono::Utc>,
-} 
+}

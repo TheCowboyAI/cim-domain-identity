@@ -84,7 +84,7 @@ impl fmt::Display for RelationshipType {
             Self::SupplierOf => write!(f, "Supplier of"),
             Self::ParentOf => write!(f, "Parent of"),
             Self::ChildOf => write!(f, "Child of"),
-            Self::Custom(s) => write!(f, "{}", s),
+            Self::Custom(s) => write!(f, "{s}"),
         }
     }
 }

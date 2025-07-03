@@ -93,7 +93,10 @@ pub enum TransitionCondition {
     /// Transition on failure
     OnFailure,
     /// Transition based on field value
-    FieldEquals { field: String, value: serde_json::Value },
+    FieldEquals {
+        field: String,
+        value: serde_json::Value,
+    },
     /// Transition based on expression
     Expression { expr: String },
     /// Manual decision required
@@ -118,4 +121,4 @@ pub struct StepTransition {
     pub transitioned_by: Option<Uuid>,
     pub reason: String,
     pub data: serde_json::Value,
-} 
+}

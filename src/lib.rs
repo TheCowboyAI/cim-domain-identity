@@ -3,38 +3,33 @@
 //! This domain manages identities, their relationships, and workflows.
 //! It serves as the orchestration layer for identity-related processes.
 
-pub mod components;
-pub mod systems;
-pub mod events;
-pub mod commands;
 pub mod aggregate;
-pub mod queries;
+pub mod commands;
+pub mod components;
+pub mod events;
 pub mod projections;
+pub mod queries;
+pub mod systems;
 
 // Re-export key types
-pub use components::*;
-pub use systems::*;
-pub use events::*;
-pub use commands::*;
 pub use aggregate::*;
+pub use commands::*;
+pub use components::*;
+pub use events::*;
+pub use systems::*;
 // Don't re-export all from queries and projections to avoid conflicts
-pub use queries::{
-    FindIdentityByIdQuery,
-    FindIdentitiesByTypeQuery,
-    FindRelationshipsByIdentityQuery,
-    FindActiveWorkflowsQuery,
-    GetIdentityVerificationStatusQuery,
-    GetIdentityProjectionsQuery,
-};
 pub use projections::{
-    IdentityProjectionSystem,
-    RelationshipGraphProjection,
-    IdentityStatusProjection,
+    IdentityProjectionSystem, IdentityStatusProjection, RelationshipGraphProjection,
     WorkflowStatusProjection,
 };
+pub use queries::{
+    FindActiveWorkflowsQuery, FindIdentitiesByTypeQuery, FindIdentityByIdQuery,
+    FindRelationshipsByIdentityQuery, GetIdentityProjectionsQuery,
+    GetIdentityVerificationStatusQuery,
+};
 
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
-use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 
 /// Result type for identity operations

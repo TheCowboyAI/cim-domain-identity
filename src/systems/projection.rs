@@ -4,15 +4,15 @@ use bevy_ecs::prelude::*;
 use uuid::Uuid;
 
 use crate::{
+    commands::{CreateProjectionCommand, SyncProjectionsCommand},
     components::{
-        IdentityProjection, ProjectionType, ProjectionSyncStatus,
-        CrossDomainReference, IdentityEntity, IdentityVerification,
+        CrossDomainReference, IdentityEntity, IdentityProjection, IdentityVerification,
+        ProjectionSyncStatus, ProjectionType,
     },
     events::{
-        IdentityCreated, IdentityLinkedToPerson, IdentityLinkedToOrganization,
-        ProjectionCreated, ProjectionsSynced,
+        IdentityCreated, IdentityLinkedToOrganization, IdentityLinkedToPerson, ProjectionCreated,
+        ProjectionsSynced,
     },
-    commands::{CreateProjectionCommand, SyncProjectionsCommand},
 };
 
 /// System to create projections
@@ -100,10 +100,11 @@ pub fn validate_projection_system(
     // Basic validation logic
     for projection in projections.iter() {
         // Check if source identity exists
-        let _identity_valid = identities.iter()
+        let _identity_valid = identities
+            .iter()
             .any(|(e, _)| e.identity_id == projection.identity_id);
-        
+
         // In a real implementation, would validate against target domain
         // and emit validation events
     }
-} 
+}

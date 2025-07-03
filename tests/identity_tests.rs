@@ -15,12 +15,11 @@
 //!     A --> H[Conceptual Integration]
 //! ```
 
-use cim_domain_identity::{
-    Person, PersonId, PersonCommand, PersonEvent,
-    Organization, OrganizationCommand, OrganizationEvent, OrganizationType,
-    IdentityDimensions,
-};
 use cim_domain_identity::domain::{Email, Name};
+use cim_domain_identity::{
+    IdentityDimensions, Organization, OrganizationCommand, OrganizationEvent, OrganizationType,
+    Person, PersonCommand, PersonEvent, PersonId,
+};
 
 #[test]
 fn test_person_creation() {
@@ -45,7 +44,9 @@ fn test_person_command_handling() {
 
     // When: Changing email
     let new_email = Email::new("jane.s@example.com".to_string()).unwrap();
-    let command = PersonCommand::ChangeEmail { new_email: new_email.clone() };
+    let command = PersonCommand::ChangeEmail {
+        new_email: new_email.clone(),
+    };
     let events = person.handle_command(command).unwrap();
 
     // Then: Email change events are generated
@@ -57,7 +58,9 @@ fn test_person_command_handling() {
         _ => panic!("Expected EmailRemoved event"),
     }
     match &events[1] {
-        PersonEvent::EmailAdded { new_email: updated, .. } => {
+        PersonEvent::EmailAdded {
+            new_email: updated, ..
+        } => {
             assert_eq!(updated.as_str(), "jane.s@example.com");
         }
         _ => panic!("Expected EmailAdded event"),
@@ -91,7 +94,10 @@ fn test_organization_member_management() {
     // Then: Member added event is generated
     assert_eq!(events.len(), 1);
     match &events[0] {
-        OrganizationEvent::MemberAdded { person_id: added_id, .. } => {
+        OrganizationEvent::MemberAdded {
+            person_id: added_id,
+            ..
+        } => {
             assert_eq!(*added_id, person_id);
         }
         _ => panic!("Expected MemberAdded event"),

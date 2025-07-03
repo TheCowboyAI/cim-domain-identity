@@ -1,13 +1,13 @@
 //! Commands for the Identity domain
 
+use crate::components::{
+    ClaimType, IdentityId, IdentityStatus, IdentityType, ProjectionContext, ProjectionType,
+    RelationshipId, RelationshipRules, RelationshipType, VerificationLevel, VerificationMethod,
+    WorkflowType,
+};
 use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::components::{
-    IdentityType, IdentityStatus, VerificationLevel, VerificationMethod,
-    RelationshipType, ProjectionType, IdentityId, WorkflowType,
-    ClaimType, RelationshipRules, RelationshipId, ProjectionContext,
-};
 
 // Identity lifecycle commands
 
@@ -147,4 +147,4 @@ pub struct SyncProjectionsCommand {
     pub identity_id: Option<IdentityId>,
     pub projection_type: Option<ProjectionType>,
     pub force: bool,
-} 
+}

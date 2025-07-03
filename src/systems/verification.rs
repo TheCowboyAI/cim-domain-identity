@@ -1,11 +1,7 @@
 //! Identity verification systems
 
+use crate::{commands::*, components::*, events::*};
 use bevy_ecs::prelude::*;
-use crate::{
-    components::*,
-    events::*,
-    commands::*,
-};
 
 /// System to start identity verification
 pub fn start_verification_system(
@@ -16,7 +12,8 @@ pub fn start_verification_system(
 ) {
     for event in events.read() {
         // Find identity to verify
-        let identity_data = identities.iter()
+        let identity_data = identities
+            .iter()
             .find(|(e, _)| e.identity_id == event.identity_id);
 
         if let Some((identity, current_verification)) = identity_data {
@@ -170,4 +167,4 @@ pub fn update_verification_claims_system(
             }
         }
     }
-} 
+}

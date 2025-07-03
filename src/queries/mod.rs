@@ -3,19 +3,18 @@
 //! This module provides read-only query operations that don't modify state.
 
 use bevy_ecs::prelude::*;
-use uuid::Uuid;
-use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::{
+    aggregate::{AggregateState, IdentityAggregate},
     components::{
-        IdentityEntity, IdentityType, IdentityStatus, IdentityVerification,
-        VerificationLevel, IdentityRelationship, RelationshipType,
-        IdentityWorkflow, WorkflowType, ProjectionType, IdentityMetadata,
-        IdentityId, WorkflowStatus, ClaimType, IdentityClaim, 
-        RelationshipRules, RelationshipId,
+        ClaimType, IdentityClaim, IdentityEntity, IdentityId, IdentityMetadata,
+        IdentityRelationship, IdentityStatus, IdentityType, IdentityVerification, IdentityWorkflow,
+        ProjectionType, RelationshipId, RelationshipRules, RelationshipType, VerificationLevel,
+        WorkflowStatus, WorkflowType,
     },
-    aggregate::{IdentityAggregate, AggregateState},
 };
 
 /// Query to find an identity by ID
@@ -66,13 +65,11 @@ pub struct FindWorkflowsQuery {
 }
 
 /// Query for identity details including relationships and workflows
-pub fn find_identity_details(
-    world: &mut World,
-    identity_id: Uuid,
-) -> Option<IdentityDetails> {
+pub fn find_identity_details(world: &mut World, identity_id: Uuid) -> Option<IdentityDetails> {
     // First, get the identity and verification
     let mut identity_query = world.query::<(&IdentityEntity, &IdentityVerification)>();
-    let identity_data = identity_query.iter(world)
+    let identity_data = identity_query
+        .iter(world)
         .find(|(entity, _)| entity.identity_id == identity_id)
         .map(|(e, v)| (e.clone(), v.clone()));
 
@@ -81,7 +78,8 @@ pub fn find_identity_details(
     // Then get relationships separately
     let relationships = {
         let mut rel_query = world.query::<&IdentityRelationship>();
-        rel_query.iter(world)
+        rel_query
+            .iter(world)
             .filter(|rel| rel.source_identity == identity_id || rel.target_identity == identity_id)
             .cloned()
             .collect::<Vec<_>>()
@@ -89,7 +87,8 @@ pub fn find_identity_details(
 
     // Get workflows
     let mut workflow_query = world.query::<&IdentityWorkflow>();
-    let active_workflows = workflow_query.iter(world)
+    let active_workflows = workflow_query
+        .iter(world)
         .filter(|w| w.identity_id == identity_id)
         .cloned()
         .collect();
@@ -108,8 +107,9 @@ pub fn find_relationships_for_identity(
     identity_id: Uuid,
 ) -> Vec<RelationshipView> {
     let mut relationship_query = world.query::<&IdentityRelationship>();
-    
-    relationship_query.iter(world)
+
+    relationship_query
+        .iter(world)
         .filter(|rel| rel.source_identity == identity_id || rel.target_identity == identity_id)
         .map(|rel| {
             let (source_id, target_id) = if rel.source_identity == identity_id {
@@ -117,7 +117,7 @@ pub fn find_relationships_for_identity(
             } else {
                 (rel.target_identity, identity_id)
             };
-            
+
             RelationshipView {
                 relationship_id: rel.relationship_id,
                 from_identity: source_id,
@@ -138,11 +138,14 @@ pub fn find_active_workflows_for_identity(
     let mut query = world.query::<&IdentityWorkflow>();
 
     for workflow in query.iter(world) {
-        if workflow.identity_id == identity_id &&
-           matches!(workflow.status,
-                   WorkflowStatus::InProgress |
-                   WorkflowStatus::WaitingForInput |
-                   WorkflowStatus::WaitingForApproval) {
+        if workflow.identity_id == identity_id
+            && matches!(
+                workflow.status,
+                WorkflowStatus::InProgress
+                    | WorkflowStatus::WaitingForInput
+                    | WorkflowStatus::WaitingForApproval
+            )
+        {
             results.push(workflow.clone());
         }
     }
@@ -151,28 +154,28 @@ pub fn find_active_workflows_for_identity(
 }
 
 /// Query to get aggregate state for an identity
-pub fn get_aggregate_state(
-    world: &mut World,
-    identity_id: IdentityId,
-) -> Option<AggregateState> {
+pub fn get_aggregate_state(world: &mut World, identity_id: IdentityId) -> Option<AggregateState> {
     // Find identity
     let mut identity_query = world.query::<(&IdentityEntity, &IdentityVerification)>();
-    let identity_data = identity_query.iter(world)
+    let identity_data = identity_query
+        .iter(world)
         .find(|(e, _)| e.identity_id == identity_id)
         .map(|(e, v)| (e.clone(), v.clone()))?;
-    
+
     let (identity, verification) = identity_data;
 
     // Find relationships
     let mut relationship_query = world.query::<&IdentityRelationship>();
-    let relationships: Vec<_> = relationship_query.iter(world)
+    let relationships: Vec<_> = relationship_query
+        .iter(world)
         .filter(|r| r.source_identity == identity_id || r.target_identity == identity_id)
         .cloned()
         .collect();
 
     // Find workflows
     let mut workflow_query = world.query::<&IdentityWorkflow>();
-    let workflows: Vec<_> = workflow_query.iter(world)
+    let workflows: Vec<_> = workflow_query
+        .iter(world)
         .filter(|w| w.identity_id == identity_id)
         .cloned()
         .collect();
@@ -315,7 +318,8 @@ pub fn find_identity_by_id(
     world: &mut World,
     query: &FindIdentityByIdQuery,
 ) -> Option<IdentityView> {
-    world.query_filtered::<(&IdentityEntity, &IdentityMetadata, &IdentityVerification), ()>()
+    world
+        .query_filtered::<(&IdentityEntity, &IdentityMetadata, &IdentityVerification), ()>()
         .iter(world)
         .find(|(entity, _, _)| entity.identity_id == query.identity_id)
         .map(|(entity, metadata, verification)| IdentityView {
@@ -333,7 +337,8 @@ pub fn find_identities_by_type(
     world: &mut World,
     query: &FindIdentitiesByTypeQuery,
 ) -> Vec<IdentityView> {
-    world.query_filtered::<(&IdentityEntity, &IdentityMetadata, &IdentityVerification), ()>()
+    world
+        .query_filtered::<(&IdentityEntity, &IdentityMetadata, &IdentityVerification), ()>()
         .iter(world)
         .filter(|(entity, _, _)| entity.identity_type == query.identity_type)
         .map(|(entity, metadata, verification)| IdentityView {
@@ -352,11 +357,12 @@ pub fn find_relationships_by_identity(
     world: &mut World,
     query: &FindRelationshipsByIdentityQuery,
 ) -> Vec<RelationshipView> {
-    world.query_filtered::<&IdentityRelationship, ()>()
+    world
+        .query_filtered::<&IdentityRelationship, ()>()
         .iter(world)
         .filter(|relationship| {
-            (query.include_outgoing && relationship.source_identity == query.identity_id) ||
-            (query.include_incoming && relationship.target_identity == query.identity_id)
+            (query.include_outgoing && relationship.source_identity == query.identity_id)
+                || (query.include_incoming && relationship.target_identity == query.identity_id)
         })
         .map(|relationship| RelationshipView {
             relationship_id: relationship.relationship_id,
@@ -378,11 +384,9 @@ pub struct RelationshipView {
     pub established_at: chrono::DateTime<chrono::Utc>,
 }
 
-pub fn find_by_status(
-    world: &mut World,
-    status: IdentityStatus,
-) -> Vec<IdentityView> {
-    world.query_filtered::<(&IdentityEntity, &IdentityVerification, &IdentityMetadata), ()>()
+pub fn find_by_status(world: &mut World, status: IdentityStatus) -> Vec<IdentityView> {
+    world
+        .query_filtered::<(&IdentityEntity, &IdentityVerification, &IdentityMetadata), ()>()
         .iter(world)
         .filter(|(entity, _, _)| entity.status == status)
         .map(|(entity, verification, metadata)| IdentityView {
@@ -400,7 +404,8 @@ pub fn find_by_verification_level(
     world: &mut World,
     min_level: VerificationLevel,
 ) -> Vec<IdentityView> {
-    world.query_filtered::<(&IdentityEntity, &IdentityVerification, &IdentityMetadata), ()>()
+    world
+        .query_filtered::<(&IdentityEntity, &IdentityVerification, &IdentityMetadata), ()>()
         .iter(world)
         .filter(|(_, verification, _)| verification.verification_level >= min_level)
         .map(|(entity, verification, metadata)| IdentityView {
@@ -421,4 +426,4 @@ pub struct IdentityDetails {
     pub verification: IdentityVerification,
     pub relationships: Vec<IdentityRelationship>,
     pub active_workflows: Vec<IdentityWorkflow>,
-} 
+}

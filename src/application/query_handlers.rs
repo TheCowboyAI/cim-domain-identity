@@ -237,9 +237,7 @@ mod tests {
             let matching_persons: Vec<Person> = persons
                 .values()
                 .filter(|person| {
-                    let full_name = format!("{} {} {}", 
-                        person.name.first,
-                        person.name.middle.as_ref().unwrap_or(&"".to_string()),
+                    let full_name = format!("{person.name.first} {person.name.middle.as_ref(} {}").unwrap_or(&"".to_string()),
                         person.name.last
                     ).to_lowercase();
                     full_name.contains(&query_lower)

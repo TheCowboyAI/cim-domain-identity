@@ -4,48 +4,38 @@
 //! Systems implement the behavior and business logic of the domain.
 
 pub mod lifecycle;
-pub mod relationship;
-pub mod workflow;
-pub mod verification;
 pub mod projection;
+pub mod relationship;
+pub mod verification;
+pub mod workflow;
 
 // Re-export key systems
 pub use lifecycle::{
-    create_identity_system,
+    archive_identity_system, create_identity_system, merge_identities_system,
     update_identity_system,
-    merge_identities_system,
-    archive_identity_system,
 };
 
 pub use relationship::{
-    establish_relationship_system,
+    establish_relationship_system, expire_relationships_system, traverse_relationships_system,
     validate_relationships_system,
-    traverse_relationships_system,
-    expire_relationships_system,
 };
 
 pub use workflow::{
-    start_workflow_system,
-    process_workflow_step_system,
-    complete_workflow_system,
+    complete_workflow_system, process_workflow_step_system, start_workflow_system,
     timeout_workflows_system,
 };
 
 pub use verification::{
-    start_verification_system,
-    process_verification_system,
-    complete_verification_system,
+    complete_verification_system, process_verification_system, start_verification_system,
 };
 
 pub use projection::{
-    create_projection_system,
-    sync_projections_system,
-    validate_projection_system,
+    create_projection_system, sync_projections_system, validate_projection_system,
 };
 
 // Re-export all systems
 pub use lifecycle::*;
+pub use projection::*;
 pub use relationship::*;
-pub use workflow::*;
 pub use verification::*;
-pub use projection::*; 
+pub use workflow::*;

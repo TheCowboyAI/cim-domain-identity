@@ -77,4 +77,4 @@ pub struct RelationshipGraph {
     pub direct_relationships: Vec<Uuid>,
     pub relationship_count: usize,
     pub last_updated: chrono::DateTime<chrono::Utc>,
-} 
+}

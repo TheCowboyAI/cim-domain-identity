@@ -3,13 +3,8 @@
 //! The IdentityAggregate enforces business rules and invariants for identity operations.
 //! It works with ECS components and systems to maintain consistency.
 
+use crate::{commands::*, components::*, events::*, IdentityError, IdentityResult};
 use bevy_ecs::prelude::*;
-use crate::{
-    components::*,
-    commands::*,
-    events::*,
-    IdentityError, IdentityResult,
-};
 use std::collections::HashMap;
 
 /// Identity Aggregate that enforces business rules
@@ -27,7 +22,7 @@ impl IdentityAggregate {
         // Business rule: Cannot create duplicate identities with same claims
         // This would check for existing identities with same email/phone
         // Implementation depends on specific business rules
-        
+
         Ok(())
     }
 
@@ -67,8 +62,9 @@ impl IdentityAggregate {
         }
 
         // Business rule: Cannot merge archived identities
-        if matches!(source.status, IdentityStatus::Archived) ||
-           matches!(target.status, IdentityStatus::Archived) {
+        if matches!(source.status, IdentityStatus::Archived)
+            || matches!(target.status, IdentityStatus::Archived)
+        {
             return Err(IdentityError::IdentityArchived);
         }
 
@@ -127,9 +123,12 @@ impl IdentityAggregate {
         workflow_type: &WorkflowType,
     ) -> Result<(), IdentityError> {
         // Check identity status
-        if !matches!(identity.status, IdentityStatus::Active | IdentityStatus::Pending) {
+        if !matches!(
+            identity.status,
+            IdentityStatus::Active | IdentityStatus::Pending
+        ) {
             return Err(IdentityError::InvalidOperation(
-                "Cannot start workflow on inactive identity".to_string()
+                "Cannot start workflow on inactive identity".to_string(),
             ));
         }
 
@@ -143,7 +142,7 @@ impl IdentityAggregate {
                 // Recovery requires active identity
                 if identity.status != IdentityStatus::Active {
                     return Err(IdentityError::InvariantViolation(
-                        "Recovery workflow requires active identity".to_string()
+                        "Recovery workflow requires active identity".to_string(),
                     ));
                 }
                 Ok(())
@@ -160,7 +159,7 @@ impl IdentityAggregate {
         // Business rule: Verification can only increase (no downgrade)
         if new_level < current_level {
             return Err(IdentityError::InvariantViolation(
-                "Cannot downgrade verification level".to_string()
+                "Cannot downgrade verification level".to_string(),
             ));
         }
 
@@ -168,7 +167,7 @@ impl IdentityAggregate {
         let level_diff = (new_level as u8) - (current_level as u8);
         if level_diff > 1 {
             return Err(IdentityError::InvariantViolation(
-                "Cannot skip verification levels".to_string()
+                "Cannot skip verification levels".to_string(),
             ));
         }
 
@@ -187,11 +186,16 @@ impl IdentityAggregate {
             status: identity.status,
             verification_level: verification.verification_level,
             active_relationships: relationships.len(),
-            active_workflows: workflows.iter()
-                .filter(|w| matches!(w.status,
-                    WorkflowStatus::InProgress |
-                    WorkflowStatus::WaitingForInput |
-                    WorkflowStatus::WaitingForApproval))
+            active_workflows: workflows
+                .iter()
+                .filter(|w| {
+                    matches!(
+                        w.status,
+                        WorkflowStatus::InProgress
+                            | WorkflowStatus::WaitingForInput
+                            | WorkflowStatus::WaitingForApproval
+                    )
+                })
                 .count(),
         }
     }
@@ -205,4 +209,4 @@ pub struct AggregateState {
     pub verification_level: VerificationLevel,
     pub active_relationships: usize,
     pub active_workflows: usize,
-} 
+}

@@ -1,8 +1,8 @@
 //! Identity projection components
 
 use bevy_ecs::prelude::*;
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Duration, Utc};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// Identity projection to other domains
@@ -107,15 +107,27 @@ pub enum ViewType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AttributeTransformation {
     /// Mask part of the value
-    Mask { attribute: String, mask_pattern: String },
+    Mask {
+        attribute: String,
+        mask_pattern: String,
+    },
     /// Hash the value
     Hash { attribute: String },
     /// Truncate the value
-    Truncate { attribute: String, max_length: usize },
+    Truncate {
+        attribute: String,
+        max_length: usize,
+    },
     /// Replace with placeholder
-    Placeholder { attribute: String, placeholder: String },
+    Placeholder {
+        attribute: String,
+        placeholder: String,
+    },
     /// Custom transformation
-    Custom { attribute: String, transform: String },
+    Custom {
+        attribute: String,
+        transform: String,
+    },
 }
 
 /// Synchronization error
@@ -125,4 +137,4 @@ pub struct SyncError {
     pub error_type: String,
     pub message: String,
     pub retry_count: u32,
-} 
+}

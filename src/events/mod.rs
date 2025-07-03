@@ -1,14 +1,13 @@
 //! Events for the Identity domain
 
+use crate::components::{
+    CrossDomainReference, IdentityId, IdentityStatus, IdentityType, ProjectionType, RelationshipId,
+    RelationshipType, VerificationLevel, VerificationMethod, WorkflowStatus, WorkflowType,
+};
 use bevy_ecs::prelude::*;
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use crate::components::{
-    IdentityType, IdentityStatus, VerificationLevel, VerificationMethod,
-    RelationshipType, WorkflowStatus, CrossDomainReference, IdentityId,
-    RelationshipId, WorkflowType, ProjectionType,
-};
 
 /// Event fired when an identity is created
 #[derive(Event, Debug, Clone, Serialize, Deserialize)]
@@ -213,4 +212,4 @@ pub enum WorkflowOutcome {
     Rejected,
     Cancelled,
     Completed,
-} 
+}

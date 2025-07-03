@@ -51,7 +51,7 @@ impl ConceptualEntity for IdentityConcept {
         // Add a root node representing this concept
         let node = cim_domain_conceptualspaces::concept_map::ConceptNode::new(
             self.concept_type.clone(),
-            format!("{} {}", self.concept_type, self.id),
+            format!("{self.concept_type} {self.id}"),
         );
         map.add_node(node);
 

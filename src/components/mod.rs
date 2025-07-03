@@ -4,33 +4,32 @@
 //! Components represent the data/state of entities in the system.
 
 pub mod identity;
+pub mod projection;
 pub mod relationship;
 pub mod workflow;
-pub mod projection;
 
 // Re-export commonly used types
 pub use identity::{
-    IdentityEntity, IdentityType, IdentityStatus, IdentityVerification,
-    VerificationLevel, VerificationMethod, IdentityClaim, ClaimType,
-    ExternalIdentity, IdentityMetadata,
+    ClaimType, ExternalIdentity, IdentityClaim, IdentityEntity, IdentityMetadata, IdentityStatus,
+    IdentityType, IdentityVerification, VerificationLevel, VerificationMethod,
 };
 
 pub use relationship::{
-    IdentityRelationship, RelationshipType, RelationshipRules,
-    RelationshipConstraint, RelationshipGraph,
+    IdentityRelationship, RelationshipConstraint, RelationshipGraph, RelationshipRules,
+    RelationshipType,
 };
 
 pub use workflow::{
-    IdentityWorkflow, WorkflowType, WorkflowStatus, WorkflowStep,
-    StepType, StepStatus, WorkflowTransition, TransitionCondition,
+    IdentityWorkflow, StepStatus, StepType, TransitionCondition, WorkflowStatus, WorkflowStep,
+    WorkflowTransition, WorkflowType,
 };
 
 pub use projection::{
-    IdentityProjection, CrossDomainReference, ProjectionType,
-    ProjectionContext, ProjectionSyncStatus,
+    CrossDomainReference, IdentityProjection, ProjectionContext, ProjectionSyncStatus,
+    ProjectionType,
 };
 
 // Type aliases for common types
 pub type IdentityId = uuid::Uuid;
 pub type RelationshipId = uuid::Uuid;
-pub type WorkflowId = uuid::Uuid; 
+pub type WorkflowId = uuid::Uuid;

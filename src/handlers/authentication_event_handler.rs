@@ -51,8 +51,8 @@ pub struct IdentityVerificationRequested {
 impl DomainEvent for IdentityVerificationRequested {
     fn subject(&self) -> String {
         match &self.identity_ref {
-            IdentityRef::Person(id) => format!("identity.person.{}.verification.requested", id.to_uuid()),
-            IdentityRef::Organization(id) => format!("identity.organization.{}.verification.requested", id.to_uuid()),
+            IdentityRef::Person(id) => format!("identity.person.{id.to_uuid(}.verification.requested")),
+            IdentityRef::Organization(id) => format!("identity.organization.{id.to_uuid(}.verification.requested")),
         }
     }
 
@@ -81,8 +81,8 @@ pub struct IdentityVerified {
 impl DomainEvent for IdentityVerified {
     fn subject(&self) -> String {
         match &self.identity_ref {
-            IdentityRef::Person(id) => format!("identity.person.{}.verified", id.to_uuid()),
-            IdentityRef::Organization(id) => format!("identity.organization.{}.verified", id.to_uuid()),
+            IdentityRef::Person(id) => format!("identity.person.{id.to_uuid(}.verified")),
+            IdentityRef::Organization(id) => format!("identity.organization.{id.to_uuid(}.verified")),
         }
     }
 

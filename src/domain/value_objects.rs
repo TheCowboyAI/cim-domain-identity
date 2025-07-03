@@ -45,8 +45,8 @@ impl Name {
 
     pub fn full_name(&self) -> String {
         match &self.middle {
-            Some(middle) => format!("{} {} {}", self.first, middle, self.last),
-            None => format!("{} {}", self.first, self.last),
+            Some(middle) => format!("{self.first} {middle} {self.last}"),
+            None => format!("{self.first} {self.last}"),
         }
     }
 }

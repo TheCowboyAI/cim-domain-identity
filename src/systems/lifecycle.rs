@@ -1,14 +1,8 @@
 //! Identity lifecycle systems
 
+use crate::{aggregate::IdentityAggregate, commands::*, components::*, events::*, IdentityError};
 use bevy_ecs::prelude::*;
 use uuid::Uuid;
-use crate::{
-    components::*,
-    events::*,
-    commands::*,
-    aggregate::IdentityAggregate,
-    IdentityError,
-};
 
 /// System to create new identities
 pub fn create_identity_system(
@@ -20,27 +14,29 @@ pub fn create_identity_system(
     for event in events.read() {
         // Collect existing identities for validation
         let existing: Vec<_> = existing_identities.iter().cloned().collect();
-        
+
         // Validate through aggregate
         match IdentityAggregate::validate_create(event, &existing) {
             Ok(_) => {
                 let identity_id = Uuid::new_v4();
-                
+
                 // Spawn the identity entity with components
-                let entity = commands.spawn((
-                    IdentityEntity {
-                        identity_id,
-                        identity_type: event.identity_type,
-                        status: IdentityStatus::Pending,
-                    },
-                    IdentityMetadata::default(),
-                    IdentityVerification {
-                        verification_level: VerificationLevel::Unverified,
-                        verified_at: None,
-                        verified_by: None,
-                        verification_method: None,
-                    },
-                )).id();
+                let entity = commands
+                    .spawn((
+                        IdentityEntity {
+                            identity_id,
+                            identity_type: event.identity_type,
+                            status: IdentityStatus::Pending,
+                        },
+                        IdentityMetadata::default(),
+                        IdentityVerification {
+                            verification_level: VerificationLevel::Unverified,
+                            verified_at: None,
+                            verified_by: None,
+                            verification_method: None,
+                        },
+                    ))
+                    .id();
 
                 // Add initial claims if provided
                 if let Some(claims) = &event.initial_claims {
@@ -67,7 +63,7 @@ pub fn create_identity_system(
             }
             Err(e) => {
                 // In production, would emit error event
-                eprintln!("Failed to create identity: {}", e);
+                eprintln!("Failed to create identity: {e}");
             }
         }
     }
@@ -106,7 +102,7 @@ pub fn update_identity_system(
                         }
                     }
                     Err(e) => {
-                        eprintln!("Failed to update identity: {}", e);
+                        eprintln!("Failed to update identity: {e}");
                     }
                 }
             }
@@ -138,15 +134,17 @@ pub fn merge_identities_system(
             }
         }
 
-        if let (Some((source_identity, source_verification)), 
-                Some((target_identity, target_verification))) = (source_data, target_data) {
-            
+        if let (
+            Some((source_identity, source_verification)),
+            Some((target_identity, target_verification)),
+        ) = (source_data, target_data)
+        {
             // Validate through aggregate
             match IdentityAggregate::validate_merge(
-                &source_identity, 
+                &source_identity,
                 &target_identity,
                 &source_verification,
-                &target_verification
+                &target_verification,
             ) {
                 Ok(_) => {
                     // Update source identity status
@@ -159,11 +157,13 @@ pub fn merge_identities_system(
                     }
 
                     // Count migrated relationships and workflows
-                    let migrated_relationships = relationships.iter()
+                    let migrated_relationships = relationships
+                        .iter()
                         .filter(|r| r.source_identity == event.source_identity)
                         .count();
 
-                    let migrated_workflows = workflows.iter()
+                    let migrated_workflows = workflows
+                        .iter()
                         .filter(|w| w.identity_id == event.source_identity)
                         .count();
 
@@ -175,12 +175,13 @@ pub fn merge_identities_system(
                         merged_at: chrono::Utc::now(),
                         migrated_relationships,
                         migrated_workflows,
-                        retained_verification_level: source_verification.verification_level
+                        retained_verification_level: source_verification
+                            .verification_level
                             .max(target_verification.verification_level),
                     });
                 }
                 Err(e) => {
-                    eprintln!("Failed to merge identities: {}", e);
+                    eprintln!("Failed to merge identities: {e}");
                 }
             }
         }
@@ -199,13 +200,20 @@ pub fn archive_identity_system(
         for (mut identity, mut metadata) in identities.iter_mut() {
             if identity.identity_id == event.identity_id {
                 // Count active relationships
-                let active_relationships = relationships.iter()
-                    .filter(|r| r.source_identity == event.identity_id || 
-                               r.target_identity == event.identity_id)
+                let active_relationships = relationships
+                    .iter()
+                    .filter(|r| {
+                        r.source_identity == event.identity_id
+                            || r.target_identity == event.identity_id
+                    })
                     .count();
 
                 // Validate through aggregate
-                match IdentityAggregate::validate_archive(&identity, active_relationships, event.force) {
+                match IdentityAggregate::validate_archive(
+                    &identity,
+                    active_relationships,
+                    event.force,
+                ) {
                     Ok(_) => {
                         // Update status
                         let old_status = identity.status;
@@ -225,10 +233,10 @@ pub fn archive_identity_system(
                         });
                     }
                     Err(e) => {
-                        eprintln!("Failed to archive identity: {}", e);
+                        eprintln!("Failed to archive identity: {e}");
                     }
                 }
             }
         }
     }
-} 
+}
