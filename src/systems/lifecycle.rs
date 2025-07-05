@@ -1,6 +1,6 @@
 //! Identity lifecycle systems
 
-use crate::{aggregate::IdentityAggregate, commands::*, components::*, events::*, IdentityError};
+use crate::{aggregate::IdentityAggregate, commands::*, components::*, events::*};
 use bevy_ecs::prelude::*;
 use uuid::Uuid;
 
@@ -71,7 +71,6 @@ pub fn create_identity_system(
 
 /// System to update identity status
 pub fn update_identity_system(
-    mut commands: Commands,
     mut events: EventReader<UpdateIdentityCommand>,
     mut updated_events: EventWriter<IdentityUpdated>,
     mut identities: Query<(&mut IdentityEntity, &mut IdentityMetadata)>,
@@ -112,7 +111,6 @@ pub fn update_identity_system(
 
 /// System to merge duplicate identities
 pub fn merge_identities_system(
-    mut commands: Commands,
     mut events: EventReader<MergeIdentitiesCommand>,
     mut merged_events: EventWriter<IdentitiesMerged>,
     mut identities: Query<(&mut IdentityEntity, &IdentityVerification)>,
@@ -190,7 +188,6 @@ pub fn merge_identities_system(
 
 /// System to archive identities
 pub fn archive_identity_system(
-    mut commands: Commands,
     mut events: EventReader<ArchiveIdentityCommand>,
     mut archived_events: EventWriter<IdentityArchived>,
     mut identities: Query<(&mut IdentityEntity, &mut IdentityMetadata)>,

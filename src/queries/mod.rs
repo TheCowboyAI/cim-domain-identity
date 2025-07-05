@@ -12,7 +12,7 @@ use crate::{
     components::{
         ClaimType, IdentityClaim, IdentityEntity, IdentityId, IdentityMetadata,
         IdentityRelationship, IdentityStatus, IdentityType, IdentityVerification, IdentityWorkflow,
-        ProjectionType, RelationshipId, RelationshipRules, RelationshipType, VerificationLevel,
+        ProjectionType, RelationshipId, RelationshipType, VerificationLevel,
         WorkflowStatus, WorkflowType,
     },
 };
@@ -201,7 +201,7 @@ pub fn find_identities_by_verification_level(
             results.push(IdentityView {
                 identity_id: identity.identity_id,
                 identity_type: identity.identity_type,
-                status: identity.status.clone(),
+                status: identity.status,
                 verification_level: verification.verification_level,
                 created_at: metadata.created_at,
                 updated_at: metadata.updated_at,
@@ -325,7 +325,7 @@ pub fn find_identity_by_id(
         .map(|(entity, metadata, verification)| IdentityView {
             identity_id: entity.identity_id,
             identity_type: entity.identity_type,
-            status: entity.status.clone(),
+            status: entity.status,
             verification_level: verification.verification_level,
             created_at: metadata.created_at,
             updated_at: metadata.updated_at,
@@ -344,7 +344,7 @@ pub fn find_identities_by_type(
         .map(|(entity, metadata, verification)| IdentityView {
             identity_id: entity.identity_id,
             identity_type: entity.identity_type,
-            status: entity.status.clone(),
+            status: entity.status,
             verification_level: verification.verification_level,
             created_at: metadata.created_at,
             updated_at: metadata.updated_at,
@@ -392,7 +392,7 @@ pub fn find_by_status(world: &mut World, status: IdentityStatus) -> Vec<Identity
         .map(|(entity, verification, metadata)| IdentityView {
             identity_id: entity.identity_id,
             identity_type: entity.identity_type,
-            status: entity.status.clone(),
+            status: entity.status,
             verification_level: verification.verification_level,
             created_at: metadata.created_at,
             updated_at: metadata.updated_at,
@@ -411,7 +411,7 @@ pub fn find_by_verification_level(
         .map(|(entity, verification, metadata)| IdentityView {
             identity_id: entity.identity_id,
             identity_type: entity.identity_type,
-            status: entity.status.clone(),
+            status: entity.status,
             verification_level: verification.verification_level,
             created_at: metadata.created_at,
             updated_at: metadata.updated_at,

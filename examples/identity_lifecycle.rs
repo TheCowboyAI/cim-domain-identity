@@ -154,8 +154,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let identity = query_handler.handle(get_identity).await?;
     println!("   Identity: {:?}", identity.identity_type);
     println!("   Status: {:?}", identity.status);
-    println!("   Verified: {identity.is_verified}");
-    println!("   Attributes: {identity.attributes.len(} items\n"));
+    println!("   Verified: {}", identity.is_verified);
+    println!("   Attributes: {} items\n", identity.attributes.len());
 
     // Step 9: Query relationships
     println!("9. Retrieving relationships...");
@@ -165,10 +165,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     let relationships = query_handler.handle(get_relationships).await?;
-    println!("   User has {relationships.len(} relationships:"));
+    println!("   User has {} relationships:", relationships.len()));
 
     for rel in relationships {
-        println!("   - {:?} with {rel.relationship_type}", rel.target_id);
+        println!("   - {:?} with {:?}", rel.relationship_type, rel.target_id);
     }
 
     // Step 10: Create service identity

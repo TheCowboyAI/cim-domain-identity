@@ -4,14 +4,13 @@ use bevy_ecs::prelude::*;
 use uuid::Uuid;
 
 use crate::{
-    commands::{CreateProjectionCommand, SyncProjectionsCommand},
+    commands::CreateProjectionCommand,
     components::{
-        CrossDomainReference, IdentityEntity, IdentityProjection, IdentityVerification,
+        IdentityEntity, IdentityProjection, IdentityVerification,
         ProjectionSyncStatus, ProjectionType,
     },
     events::{
         IdentityCreated, IdentityLinkedToOrganization, IdentityLinkedToPerson, ProjectionCreated,
-        ProjectionsSynced,
     },
 };
 

@@ -1,6 +1,6 @@
 //! Projections and read models for the Identity domain
 
-use crate::{components::*, events::*, queries::IdentityView};
+use crate::{components::*, events::*};
 use bevy_ecs::prelude::*;
 
 /// Identity projection system marker
@@ -36,7 +36,7 @@ pub fn update_identity_projections(
 /// System to update relationship graph projections
 pub fn update_relationship_graph(
     mut events: EventReader<RelationshipEstablished>,
-    mut graphs: Query<&mut RelationshipGraph>,
+    graphs: Query<&mut RelationshipGraph>,
 ) {
     for event in events.read() {
         // Update any relationship graphs that include these identities

@@ -5,7 +5,6 @@ use bevy_ecs::prelude::*;
 
 /// System to start identity verification
 pub fn start_verification_system(
-    mut commands: Commands,
     mut events: EventReader<StartVerificationCommand>,
     mut started_events: EventWriter<VerificationStarted>,
     identities: Query<(&IdentityEntity, &IdentityVerification)>,
@@ -16,7 +15,7 @@ pub fn start_verification_system(
             .iter()
             .find(|(e, _)| e.identity_id == event.identity_id);
 
-        if let Some((identity, current_verification)) = identity_data {
+        if let Some((_identity, current_verification)) = identity_data {
             // Check if verification is already at max level
             if current_verification.verification_level == VerificationLevel::Full {
                 continue;
@@ -41,6 +40,7 @@ pub fn start_verification_system(
                 }
                 VerificationMethod::ThirdParty { provider } => {
                     // Would integrate with external service
+                    info!("Starting third-party verification with provider: {}", provider);
                 }
             }
 
@@ -57,7 +57,6 @@ pub fn start_verification_system(
 
 /// System to process verification results
 pub fn process_verification_system(
-    mut commands: Commands,
     mut events: EventReader<CompleteVerificationCommand>,
     mut completed_events: EventWriter<VerificationCompleted>,
     mut identities: Query<(&IdentityEntity, &mut IdentityVerification)>,
@@ -76,6 +75,11 @@ pub fn process_verification_system(
                     // Update identity status if pending
                     if matches!(identity.status, IdentityStatus::Pending) {
                         // Would update to Active status
+                    }
+
+                    // Log provider if third-party verification
+                    if let VerificationMethod::ThirdParty { provider } = &event.verification_method {
+                        info!("Verification completed via third-party provider: {}", provider);
                     }
 
                     // Emit completed event

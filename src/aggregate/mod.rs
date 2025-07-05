@@ -3,9 +3,8 @@
 //! The IdentityAggregate enforces business rules and invariants for identity operations.
 //! It works with ECS components and systems to maintain consistency.
 
-use crate::{commands::*, components::*, events::*, IdentityError, IdentityResult};
+use crate::{commands::*, components::*, IdentityError, IdentityResult};
 use bevy_ecs::prelude::*;
-use std::collections::HashMap;
 
 /// Identity Aggregate that enforces business rules
 ///

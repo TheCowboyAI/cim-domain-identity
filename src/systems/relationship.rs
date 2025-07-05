@@ -1,9 +1,7 @@
 //! Identity relationship systems
 
-use crate::{aggregate::IdentityAggregate, commands::*, components::*, events::*, IdentityError};
+use crate::{aggregate::IdentityAggregate, commands::*, components::*, events::*};
 use bevy_ecs::prelude::*;
-use bevy_time::Time;
-use std::collections::{HashSet, VecDeque};
 use uuid::Uuid;
 
 /// System to establish relationships between identities
@@ -80,7 +78,6 @@ pub fn establish_relationship_system(
 
 /// System to validate relationships
 pub fn validate_relationships_system(
-    mut commands: Commands,
     mut events: EventReader<ValidateRelationshipCommand>,
     mut validated_events: EventWriter<RelationshipValidated>,
     relationships: Query<(&IdentityRelationship, Entity)>,
@@ -139,7 +136,6 @@ pub fn validate_relationships_system(
 
 /// System to traverse relationship graphs
 pub fn traverse_relationships_system(
-    mut commands: Commands,
     mut events: EventReader<TraverseRelationshipsCommand>,
     mut traversed_events: EventWriter<RelationshipsTraversed>,
     relationships: Query<&IdentityRelationship>,

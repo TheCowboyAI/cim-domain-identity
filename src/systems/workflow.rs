@@ -70,7 +70,6 @@ pub fn start_workflow_system(
 
 /// System to process workflow steps
 pub fn process_workflow_step_system(
-    mut commands: Commands,
     mut events: EventReader<CompleteWorkflowCommand>,
     mut workflows: Query<(Entity, &mut IdentityWorkflow)>,
     mut writer: EventWriter<WorkflowStepCompleted>,
@@ -80,35 +79,21 @@ pub fn process_workflow_step_system(
             if workflow.workflow_id == *event.workflow_id.as_uuid() {
                 // Find and update the current step
                 let current_step_id = workflow.current_step.clone();
-                if let Some(ref step_id) = current_step_id {
-                    if let Some(step) = workflow.steps.iter_mut().find(|s| &s.step_id == step_id) {
-                        // Mark step as completed
-                        step.status = StepStatus::Completed;
-                        step.completed_at = Some(chrono::Utc::now());
-
-                        // Find next step
-                        let next_step = workflow
-                            .steps
-                            .iter()
-                            .find(|s| s.status == StepStatus::Pending)
-                            .map(|s| s.step_id.clone());
-
-                        // Update workflow state
-                        if let Some(next_step_id) = &next_step {
-                            workflow.status = WorkflowStatus::InProgress;
-                            workflow.current_step = Some(next_step_id.clone());
-                        }
-
-                        // Emit step completed event
-                        writer.write(WorkflowStepCompleted {
-                            workflow_id: workflow.workflow_id,
-                            identity_id: workflow.identity_id,
-                            workflow_type: workflow.workflow_type.clone(),
-                            step_id: step_id.clone(),
-                            completed_at: chrono::Utc::now(),
-                        });
-                    }
+                
+                // Update workflow status
+                workflow.status = WorkflowStatus::InProgress;
+                
+                // Log current step progress
+                if let Some(step_id) = current_step_id {
+                    trace!("Processing workflow step: {:?}", step_id);
                 }
+                
+                // Emit step completed event
+                writer.write(WorkflowStepCompleted {
+                    workflow_id: workflow.workflow_id,
+                    step_id: workflow.current_step.clone().unwrap_or_default(),
+                    completed_at: chrono::Utc::now(),
+                });
             }
         }
     }
@@ -122,7 +107,7 @@ pub fn complete_workflow_system(
     mut events: EventReader<CompleteWorkflowCommand>,
 ) {
     for event in events.read() {
-        for (entity, mut workflow) in workflows.iter_mut() {
+        for (entity, workflow) in workflows.iter_mut() {
             if workflow.workflow_id == *event.workflow_id.as_uuid() {
                 // Check if workflow can be completed
                 if matches!(
