@@ -2,7 +2,7 @@
 //!
 //! This module provides read-only query operations that don't modify state.
 
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

@@ -5,7 +5,7 @@ use crate::components::{
     RelationshipId, RelationshipRules, RelationshipType, VerificationLevel, VerificationMethod,
     WorkflowType,
 };
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
 // Identity lifecycle commands

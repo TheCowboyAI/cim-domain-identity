@@ -4,7 +4,7 @@
 //! It works with ECS components and systems to maintain consistency.
 
 use crate::{commands::*, components::*, IdentityError, IdentityResult};
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 
 /// Identity Aggregate that enforces business rules
 ///

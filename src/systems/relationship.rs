@@ -1,7 +1,7 @@
 //! Identity relationship systems
 
 use crate::{aggregate::IdentityAggregate, commands::*, components::*, events::*};
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 use uuid::Uuid;
 
 /// System to establish relationships between identities

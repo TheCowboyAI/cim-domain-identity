@@ -8,6 +8,7 @@ pub mod projection;
 pub mod relationship;
 pub mod verification;
 pub mod workflow;
+pub mod markers;
 
 // Re-export key systems
 pub use lifecycle::{
@@ -35,3 +36,13 @@ pub use projection::{
 
 // Re-export all systems
 pub use verification::*;
+
+// Re-export marker systems and components
+pub use markers::{
+    add_identity_markers_system,
+    add_location_markers_system,
+    PersonMarker,
+    LocationMarker,
+    OrganizationMarker,
+    AgentMarker,
+};

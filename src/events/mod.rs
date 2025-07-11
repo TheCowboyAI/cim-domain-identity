@@ -4,7 +4,7 @@ use crate::components::{
     CrossDomainReference, IdentityId, IdentityStatus, IdentityType, ProjectionType, RelationshipId,
     RelationshipType, VerificationLevel, VerificationMethod, WorkflowStatus, WorkflowType,
 };
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

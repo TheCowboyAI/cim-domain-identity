@@ -1,6 +1,6 @@
 //! Identity projection systems
 
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 use uuid::Uuid;
 
 use crate::{

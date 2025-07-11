@@ -1,6 +1,6 @@
 //! Identity workflow components
 
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

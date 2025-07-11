@@ -1,7 +1,7 @@
 //! Projections and read models for the Identity domain
 
 use crate::{components::*, events::*};
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 
 /// Identity projection system marker
 pub struct IdentityProjectionSystem;

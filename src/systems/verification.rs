@@ -1,7 +1,7 @@
 //! Identity verification systems
 
 use crate::{commands::*, components::*, events::*};
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 
 /// System to start identity verification
 pub fn start_verification_system(

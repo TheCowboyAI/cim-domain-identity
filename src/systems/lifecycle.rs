@@ -1,7 +1,7 @@
 //! Identity lifecycle systems
 
 use crate::{aggregate::IdentityAggregate, commands::*, components::*, events::*};
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 use uuid::Uuid;
 
 /// System to create new identities

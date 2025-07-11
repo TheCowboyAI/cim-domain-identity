@@ -1,7 +1,7 @@
 //! Identity workflow systems
 
 use crate::{commands::*, components::*, events::*};
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 use tracing::trace;
 
 /// System to start identity workflows

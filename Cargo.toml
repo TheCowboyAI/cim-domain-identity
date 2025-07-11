@@ -11,9 +11,7 @@ cim-domain-organization = { path = "../cim-domain-organization" }
 cim-domain-conceptualspaces = { path = "../cim-domain-conceptualspaces" }
 
 # Bevy ECS
-bevy_ecs = { path = "../bevy-patched/crates/bevy_ecs" }
-bevy_time = { path = "../bevy-patched/crates/bevy_time" }
-bevy_app = { path = "../bevy-patched/crates/bevy_app" }
+bevy = { version = "0.16.1", default-features = false }
 
 # Core
 anyhow = "1.0"

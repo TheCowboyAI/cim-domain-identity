@@ -1,6 +1,6 @@
 //! Identity projection components
 
-use bevy_ecs::prelude::*;
+use bevy::ecs::prelude::*;
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
