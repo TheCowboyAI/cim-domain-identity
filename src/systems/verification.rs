@@ -2,6 +2,7 @@
 
 use crate::{commands::*, components::*, events::*};
 use bevy::ecs::prelude::*;
+use tracing::info;
 
 /// System to start identity verification
 pub fn start_verification_system(

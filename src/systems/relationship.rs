@@ -78,6 +78,7 @@ pub fn establish_relationship_system(
 
 /// System to validate relationships
 pub fn validate_relationships_system(
+    mut commands: Commands,
     mut events: EventReader<ValidateRelationshipCommand>,
     mut validated_events: EventWriter<RelationshipValidated>,
     relationships: Query<(&IdentityRelationship, Entity)>,

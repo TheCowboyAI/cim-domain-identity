@@ -75,7 +75,7 @@ pub fn process_workflow_step_system(
     mut writer: EventWriter<WorkflowStepCompleted>,
 ) {
     for event in events.read() {
-        for (entity, mut workflow) in workflows.iter_mut() {
+        for (_entity, mut workflow) in workflows.iter_mut() {
             if workflow.workflow_id == *event.workflow_id.as_uuid() {
                 // Find and update the current step
                 let current_step_id = workflow.current_step.clone();
@@ -91,6 +91,8 @@ pub fn process_workflow_step_system(
                 // Emit step completed event
                 writer.write(WorkflowStepCompleted {
                     workflow_id: workflow.workflow_id,
+                    identity_id: workflow.identity_id,
+                    workflow_type: workflow.workflow_type.clone(),
                     step_id: workflow.current_step.clone().unwrap_or_default(),
                     completed_at: chrono::Utc::now(),
                 });
@@ -138,7 +140,7 @@ pub fn complete_workflow_system(
 /// System to handle workflow timeouts
 pub fn timeout_workflows_system(
     mut workflows: Query<&mut IdentityWorkflow>,
-    time: Res<bevy_time::Time>,
+    time: Res<bevy::time::Time>,
 ) {
     // Use the time resource to get elapsed time since startup
     // In production, you might want to track actual wall-clock time

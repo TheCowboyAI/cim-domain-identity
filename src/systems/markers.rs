@@ -48,6 +48,13 @@ pub fn add_identity_markers_system(
                 // Device entities also get the Agent marker (as they are automated agents)
                 commands.entity(entity).insert(AgentMarker(DomainAgentMarker));
             }
+            IdentityType::System => {
+                // System entities get the Agent marker
+                commands.entity(entity).insert(AgentMarker(DomainAgentMarker));
+            }
+            IdentityType::External => {
+                // External entities don't get any specific marker
+            }
         }
     }
 }

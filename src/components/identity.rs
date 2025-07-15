@@ -23,6 +23,10 @@ pub enum IdentityType {
     System,
     /// An external identity from another system
     External,
+    /// A service identity
+    Service,
+    /// A device identity
+    Device,
 }
 
 /// Status of an identity
