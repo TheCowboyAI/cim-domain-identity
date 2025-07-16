@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 # CIM Dependencies
-cim-domain = { path = "../cim-domain" }
+cim-domain = { git = "https://github.com/TheCowboyAI/cim-domain.git", branch = "main" }
 cim-domain-person = { path = "../cim-domain-person" }
 cim-domain-organization = { path = "../cim-domain-organization" }
 cim-domain-conceptualspaces = { path = "../cim-domain-conceptualspaces" }
